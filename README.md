@@ -1,6 +1,6 @@
 # nous-frontend
 
-The Next.js 14 application for Nous. All UI, all client state, all rendering. One upstream: `nous-backend`.
+The Next.js 15 application for Nous. All UI, all client state, all rendering. One upstream: `nous-backend`.
 
 **Owner:** Johan Philip (Director of Frontend Engineering)
 
