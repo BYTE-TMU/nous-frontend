@@ -8,6 +8,8 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname) },
   },
   test: {
+    environment: "jsdom",
+    setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
   },
 });
