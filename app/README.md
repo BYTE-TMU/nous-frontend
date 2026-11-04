@@ -2,15 +2,15 @@
 
 ## Purpose
 
-Every route in the App Router. `page.tsx` is the insight feed — THE home screen, not an input field.
+Every route in the App Router. The home screen is the experiment list, not an input field.
 
 ## What belongs here
 
-`layout.tsx`, `page.tsx`, and one directory per route (`fingerprint/`, `entries/`, `upload/`, `account/`, `(auth)/`).
+`layout.tsx`, `page.tsx`, and one directory per route. Planned routes: `login/`, `experiments/new/` (configuration form), `experiments/[id]/` (the transcript view).
 
 ## What does not
 
-- Business logic, scoring, or ranking — pages call `lib/api.ts` and render what comes back, they don't decide what counts as an insight
+- Business logic, running experiments, or judging — pages call `lib/api.ts` and render what comes back
 - Reusable UI — that's `components/`; a page composes components, it doesn't define primitives inline
 
 ## Key files
@@ -18,10 +18,13 @@ Every route in the App Router. `page.tsx` is the insight feed — THE home scree
 | File | Purpose |
 |---|---|
 | `layout.tsx` | root layout — html/body shell, global CSS import |
-| `page.tsx` | the insight feed — THE home screen |
-| `upload/page.tsx` | export upload UX, including the long-running job wait |
+| `page.tsx` | the experiment list — the home screen |
+
+## Legacy
+
+`upload/`, `fingerprint/`, `entries/`, and `account/` belong to the previous product. They are to be deleted; do not build on them.
 
 ## Rules
 
-- If a screen's primary affordance is an input field, it is probably wrong — see root `README.md`.
-- Cold start, processing, not-enough-data, and low-confidence are real states every relevant page handles, not TODOs.
+- Nobody types at a model through this UI. A screen whose primary affordance is a chat box is wrong.
+- Provisioning, in-progress, failed, judge-pending, and no-thoughts are real states every transcript page handles, not TODOs.

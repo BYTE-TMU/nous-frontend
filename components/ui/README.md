@@ -6,19 +6,19 @@ Primitives only — buttons, cards, empty states. The generic building blocks ev
 
 ## What belongs here
 
-`Button.tsx`, `Card.tsx`, `EmptyState.tsx`, and anything else with no opinion about insights, entries, or the graph.
+shadcn components (`button.tsx`, `card.tsx`, added with `npx shadcn@latest add <name>`) and `EmptyState.tsx`, and anything else with no opinion about experiments, turns, or judges.
 
 ## What does not
 
-- **Business logic.** If a component in here is ranking, scoring, or deciding what counts as an insight, it belongs in `nous-backend`, not in a UI primitive (hard rule #4).
+- **Business logic.** Anything that decides what a result means belongs in the backend, not in a UI primitive.
 - Anything that calls `lib/api.ts` — primitives receive data as props, they don't fetch it
 
 ## Key files
 
 | File | Purpose |
 |---|---|
-| `EmptyState.tsx` | shared shell for cold-start / not-enough-data states used across `app/` |
+| `EmptyState.tsx` | shared shell for empty and not-yet states used across `app/` |
 
 ## Rules
 
-- A primitive stays generic — no `InsightCard`-specific styling leaking in here. If it needs to know about insights, it's not a primitive.
+- A primitive stays generic. If it needs to know about turns or judgements, it belongs in `components/transcript/` or `components/experiment/`.
