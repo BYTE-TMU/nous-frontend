@@ -12,7 +12,7 @@ The non-visual layer: backend calls, auth token handling, and generated types.
 
 ## What does not
 
-- A call to `nous-ai`, direct or proxied. The Anthropic key does not exist in this repo and never will.
+- A call to `nous-ai`, direct or proxied. No provider key exists in this repo and never will.
 - A hand-edited type. If a field is missing, the fix is a PR to `nous-backend/contracts/`, a tag, then `npm run generate:types` — not an `as any` here.
 
 ## Key files
@@ -24,4 +24,4 @@ The non-visual layer: backend calls, auth token handling, and generated types.
 
 ## Rules
 
-- CI regenerates `types.ts` and fails on a diff against what's committed — this is the mechanism that catches frontend/backend drift on the PR that causes it, not in Week 9.
+- CI regenerates `types.ts` and fails on a diff against what's committed, so frontend/backend drift is caught on the PR that causes it.

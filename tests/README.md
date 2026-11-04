@@ -20,5 +20,6 @@ Test suite for `nous-frontend`, run via `vitest` (`npm run lint && npm run typec
 
 ## Rules
 
-- `InsightCard` and `EvidenceList` need tests that would catch evidence being truncated in a meaning-changing way or paraphrased — that's the one thing this product cannot get wrong.
-- Accessibility on `InsightCard` (keyboard nav, evidence expansion) should be covered by a test, not just eyeballed.
+- The turn card needs tests that messages, thoughts, and judge commentary render exactly as given, with no truncation or rewriting that changes meaning.
+- Each transcript state (provisioning, running, completed, failed, judge pending, no thoughts) gets a test.
+- Keyboard navigation and expand/collapse of the turn card are covered by a test, not just eyeballed.
