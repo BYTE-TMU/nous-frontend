@@ -37,10 +37,12 @@ describe("LoginForm", () => {
     );
   });
 
-  it("does not offer Google sign-in", () => {
-    render(<LoginForm />);
-    expect(screen.queryByRole("button", { name: /google/i })).not.toBeInTheDocument();
-  });
+it("offers Google sign-in", () => {
+  render(<LoginForm />);
+  expect(
+    screen.getByRole("button", { name: "Continue with Google" }),
+  ).toBeInTheDocument();
+});
 
   it("logs in with the trimmed email and goes to the dashboard", async () => {
     login.mockResolvedValue(undefined);
@@ -100,7 +102,7 @@ describe("LoginForm", () => {
     login.mockReturnValue(new Promise(() => undefined));
     render(<LoginForm />);
     await fillAndSubmit("me@nous.dev", "hunter2hunter2");
-    expect(screen.getByRole("button", { name: "Logging in…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Logging in..." })).toBeDisabled();
     expect(screen.getByLabelText("Email")).toBeDisabled();
   });
 });

@@ -18,6 +18,7 @@ Test suite for `nous-frontend`, run via `vitest` (`npm run lint && npm run typec
 |---|---|
 | `layout.test.ts` | smoke test for `app/layout.tsx`'s metadata export |
 | `auth/` | login and password-reset tests, plus the manual test guide (`auth/README.md`) |
+| `new-experiment/` | the new experiment dialog, the request builder and the cost estimate |
 
 ## Rules
 
