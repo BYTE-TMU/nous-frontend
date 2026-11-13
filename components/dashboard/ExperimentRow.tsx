@@ -3,7 +3,7 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import ArrowRight02Icon from "@hugeicons/core-free-icons/ArrowRight02Icon";
 import ExperimentStatus from "@/components/experiment/ExperimentStatus";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import type { Experiment } from "./ExperimentCard";
 
 export default function ExperimentRow({

@@ -45,3 +45,53 @@ export function login(body: LoginRequest): Promise<TokenResponse> {
     body: JSON.stringify(body),
   });
 }
+
+export function exchangeGoogleCode(code: string): Promise<TokenResponse> {
+  return request<TokenResponse>(`${AUTH_PATH}/google/exchange`, {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export function startGoogleLogin(): void {
+  window.location.assign(`${API_URL}${AUTH_PATH}/google`);
+}
+
+
+export type WaitlistRequest = {
+  id: string;
+  email: string;
+  status: string;
+  requested_at: string;
+};
+
+async function adminRequest<T>(
+  path: string,
+  token: string,
+  method = "GET",
+): Promise<T> {
+  return request<T>(`${AUTH_PATH}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function getWaitlist(token: string): Promise<WaitlistRequest[]> {
+  return adminRequest<WaitlistRequest[]>("/admin/waitlist", token);
+}
+
+export function approveWaitlistRequest(
+  id: string,
+  token: string,
+): Promise<{ message: string; email: string }> {
+  return adminRequest(`/admin/waitlist/${encodeURIComponent(id)}/approve`, token, "POST");
+}
+
+export function rejectWaitlistRequest(
+  id: string,
+  token: string,
+): Promise<{ message: string; email: string }> {
+  return adminRequest(`/admin/waitlist/${encodeURIComponent(id)}/reject`, token, "POST");
+}

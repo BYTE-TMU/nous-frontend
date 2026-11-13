@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader } from "../ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "../ui/Card";
 import type { ExperimentSetup } from "./types";
 
 type Props = {

@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import PauseIcon from "@hugeicons/core-free-icons/PauseIcon";
 import StopIcon from "@hugeicons/core-free-icons/StopIcon";

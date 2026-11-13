@@ -66,3 +66,8 @@ export async function resetPassword(
   if (!isResetMocked()) throw new NotAvailableError("Password reset");
   await mock.resetPassword(email, code, newPassword);
 }
+
+export async function completeGoogleLogin(code: string): Promise<void> {
+  const { access_token } = await api.exchangeGoogleCode(code);
+  setToken(access_token);
+}

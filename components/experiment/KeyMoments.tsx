@@ -1,4 +1,4 @@
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent } from "../ui/Card";
 import KeyMomentCard from "./KeyMomentCard";
 import type { KeyMoment } from "./deriveKeyMoments";
 
