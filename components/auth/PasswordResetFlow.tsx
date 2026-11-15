@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../../lib/api";
@@ -9,9 +10,13 @@ import {
   resetPassword,
   verifyResetCode,
 } from "../../lib/auth";
-import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/TextField";
+import { AuthBanner } from "./AuthBanner";
+import { AuthButton } from "./AuthButton";
 import { AuthCard } from "./AuthCard";
+import { AuthField } from "./AuthField";
+import { AuthStepMarker } from "./AuthStepMarker";
+import { CodeInput } from "./CodeInput";
+import { PasswordStrength } from "./PasswordStrength";
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 const CODE_PATTERN = /^\d{6}$/;
@@ -105,12 +110,23 @@ export function PasswordResetFlow() {
     );
   }
 
+  const stepNumber = step === "email" ? 1 : step === "code" ? 2 : 3;
+  const subtitle =
+    step === "email"
+      ? "Enter the email associated with your account and we’ll send you a code."
+      : step === "code"
+        ? `We sent a 6-digit code to ${email.trim()}.`
+        : "All set! Choose a new password and you’re back up and running.";
+
   return (
-    <AuthCard heading="Let’s get your password reset.">
+    <AuthCard
+      heading="Let’s get your password reset."
+      subtitle={subtitle}
+      eyebrow={<AuthStepMarker step={stepNumber} />}
+    >
       {step === "email" ? (
-        <form noValidate onSubmit={submitEmail} className="flex flex-col items-center gap-5">
-          <p className="w-full">Please enter the email associated with your account.</p>
-          <TextField
+        <form noValidate onSubmit={submitEmail} className="flex flex-col gap-7">
+          <AuthField
             label="Email"
             type="email"
             name="email"
@@ -122,63 +138,58 @@ export function PasswordResetFlow() {
             disabled={submitting}
           />
           <Feedback notice={notice} status={status} />
-          <Button type="submit" disabled={submitting} aria-busy={submitting} className="mt-2">
-            Next
-          </Button>
+          <AuthButton type="submit" disabled={submitting} aria-busy={submitting}>
+            Send code
+          </AuthButton>
+          <BackToLogin />
         </form>
       ) : null}
 
       {step === "code" ? (
-        <form noValidate onSubmit={submitCode} className="flex flex-col items-center gap-5">
-          <div className="w-full">
-            <p>You have been sent a 6 digit verification code.</p>
-            <p className="mt-1 text-sm">
-              Haven’t received your code? Check your spam folder or{" "}
-              <button
-                type="button"
-                onClick={requestNewCode}
-                disabled={submitting}
-                className="underline disabled:opacity-50"
-              >
-                request a new one
-              </button>
-              .
-            </p>
-          </div>
-          <TextField
+        <form noValidate onSubmit={submitCode} className="flex flex-col gap-7">
+          <CodeInput
             label="Verification code"
-            name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            autoFocus
             value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+            onChange={(value) => setCode(value.replace(/\D/g, ""))}
             error={fieldError.code}
             disabled={submitting}
           />
+          <p className="text-base text-smoke">
+            Haven’t received it? Check your spam folder or{" "}
+            <button
+              type="button"
+              onClick={requestNewCode}
+              disabled={submitting}
+              className="cursor-pointer font-medium text-signal-lime underline underline-offset-2 hover:text-impact-green disabled:opacity-50"
+            >
+              request a new one
+            </button>
+          </p>
           <Feedback notice={notice} status={status} />
-          <Button type="submit" disabled={submitting} aria-busy={submitting} className="mt-2">
+          <AuthButton type="submit" disabled={submitting} aria-busy={submitting}>
             Next
-          </Button>
+          </AuthButton>
+          <BackToLogin />
         </form>
       ) : null}
 
       {step === "password" ? (
-        <form noValidate onSubmit={submitPassword} className="flex flex-col items-center gap-4">
-          <p className="w-full">All set! Let’s get you back up and running.</p>
-          <TextField
-            label="New password"
-            type="password"
-            name="new-password"
-            autoComplete="new-password"
-            autoFocus
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            error={fieldError.password}
-            disabled={submitting}
-          />
-          <TextField
+        <form noValidate onSubmit={submitPassword} className="flex flex-col gap-7">
+          <div className="flex flex-col gap-4">
+            <AuthField
+              label="New password"
+              type="password"
+              name="new-password"
+              autoComplete="new-password"
+              autoFocus
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              error={fieldError.password}
+              disabled={submitting}
+            />
+            <PasswordStrength password={newPassword} />
+          </div>
+          <AuthField
             label="Confirm new password"
             type="password"
             name="confirm-password"
@@ -189,26 +200,32 @@ export function PasswordResetFlow() {
             disabled={submitting}
           />
           <Feedback notice={notice} status={status} />
-          <Button type="submit" disabled={submitting} aria-busy={submitting} className="mt-2">
-            Reset
-          </Button>
+          <AuthButton type="submit" disabled={submitting} aria-busy={submitting}>
+            Reset password
+          </AuthButton>
+          <BackToLogin />
         </form>
       ) : null}
     </AuthCard>
   );
 }
 
+function BackToLogin() {
+  return (
+    <Link
+      href="/login"
+      className="self-center text-[17px] font-medium text-ash underline underline-offset-2 hover:text-white"
+    >
+      Back to log in
+    </Link>
+  );
+}
+
 function Feedback({ notice, status }: { notice: string; status: string }) {
-  if (notice) {
-    return (
-      <p role="alert" className="w-full text-center text-sm">
-        {notice}
-      </p>
-    );
-  }
+  if (notice) return <AuthBanner>{notice}</AuthBanner>;
   if (status) {
     return (
-      <p role="status" className="w-full text-center text-sm">
+      <p role="status" className="text-center text-sm text-smoke">
         {status}
       </p>
     );
