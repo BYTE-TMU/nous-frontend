@@ -143,3 +143,23 @@ export function getRunTurns(runId: string, token: string | null): Promise<RunMes
 export function getRunJudgements(runId: string, token: string | null): Promise<RunJudgements> {
   return request<RunJudgements>(`${runPath(runId)}/judgements`, { method: "GET" }, token);
 }
+
+export type RunResults = Schemas["RunResultsOut"];
+
+/** Only available once the run is `completed`; any other state answers 409. */
+export function getRunResults(runId: string, token: string | null): Promise<RunResults> {
+  return request<RunResults>(`${runPath(runId)}/results`, { method: "GET" }, token);
+}
+
+/** Pause, resume and stop answer with the run's new state, or 409 if it can't change. */
+export function pauseRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(`${runPath(runId)}/pause`, { method: "POST" }, token);
+}
+
+export function resumeRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(`${runPath(runId)}/resume`, { method: "POST" }, token);
+}
+
+export function stopRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(`${runPath(runId)}/stop`, { method: "POST" }, token);
+}

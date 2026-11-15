@@ -13,11 +13,13 @@ import {
 const getRun = vi.fn();
 const getRunTurns = vi.fn();
 const getRunJudgements = vi.fn();
+const getRunResults = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/api")>()),
   getRun: (...args: unknown[]) => getRun(...args),
   getRunTurns: (...args: unknown[]) => getRunTurns(...args),
   getRunJudgements: (...args: unknown[]) => getRunJudgements(...args),
+  getRunResults: (...args: unknown[]) => getRunResults(...args),
 }));
 
 const run = (overrides: Partial<RunSummary> = {}): RunSummary => ({
@@ -126,6 +128,14 @@ describe("ExperimentPage", () => {
     getRun.mockResolvedValue(run({ state: "completed" }));
     getRunTurns.mockResolvedValue([message(1, "attacker", "Please?"), message(1, "defender", "No.")]);
     getRunJudgements.mockResolvedValue(noJudgements);
+    getRunResults.mockResolvedValue({
+      outcome: "held",
+      break_turn: null,
+      turns_completed: 1,
+      judge_verdict: null,
+      per_turn: [],
+      cost: { total_usd: 0, total_tokens: 0, breakdown: [] },
+    });
   });
   afterEach(() => vi.useRealTimers());
 
@@ -136,6 +146,21 @@ describe("ExperimentPage", () => {
     expect(screen.getByRole("heading", { name: "Refund test" })).toBeInTheDocument();
     expect(getRun).toHaveBeenCalledWith("abc", "tok");
     expect(getRunTurns).toHaveBeenCalledWith("abc", "tok");
+  });
+
+  it("shows pause and stop for a live run, and fetches the verdict only after completion", async () => {
+    getRun.mockResolvedValue(run());
+    render(<ExperimentPage runId="abc" />);
+    expect(await screen.findByRole("button", { name: "Pause" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
+    expect(getRunResults).not.toHaveBeenCalled();
+  });
+
+  it("shows no controls but loads the results for a completed run", async () => {
+    render(<ExperimentPage runId="abc" />);
+    await screen.findByText("Please?");
+    expect(screen.queryByRole("button", { name: "Pause" })).not.toBeInTheDocument();
+    expect(getRunResults).toHaveBeenCalledWith("abc", "tok");
   });
 
   it("asks to log in when there is no token", async () => {

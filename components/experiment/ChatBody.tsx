@@ -18,7 +18,12 @@ export default function ChatBody({ view }: { view: ExperimentView }) {
         setup={view.setup}
       />
       <div className="col-span-8">
-        <ExperimentResults status={view.status} />
+        <ExperimentResults
+          status={view.status}
+          state={view.state}
+          verdict={view.verdict}
+          costUsd={view.costUsd}
+        />
       </div>
     </div>
   );

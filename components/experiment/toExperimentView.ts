@@ -1,5 +1,5 @@
 import type { Assessment, Turn } from "@/components/transcript/types";
-import type { RunJudgements, RunMessage, RunSummary } from "@/lib/api";
+import type { RunJudgements, RunMessage, RunResults, RunSummary } from "@/lib/api";
 import { ExperimentStatusEnum } from "./ExperimentStatus";
 import type { ExperimentSetup } from "./types";
 
@@ -13,6 +13,10 @@ export type ExperimentView = {
   setup: ExperimentSetup;
   /** The run can still change, so the page should keep refreshing it. */
   live: boolean;
+  state: RunSummary["state"];
+  costUsd: number;
+  /** The judge's closing verdict. Only exists once the run has completed. */
+  verdict?: { turn: number; explanation: string; excerpt: string };
 };
 
 const FINISHED: RunSummary["state"][] = ["completed", "failed"];
@@ -74,6 +78,7 @@ export function toExperimentView(
   run: RunSummary,
   messages: RunMessage[],
   judgements: RunJudgements,
+  results?: RunResults,
 ): ExperimentView {
   const attacker = shortModel(run.attacker_model);
   const defender = shortModel(run.defender_model);
@@ -92,5 +97,14 @@ export function toExperimentView(
       defenderModel: defender,
     },
     live: isLive(run.state),
+    state: run.state,
+    costUsd: run.cost.total_usd,
+    verdict: results?.judge_verdict
+      ? {
+          turn: results.judge_verdict.cited_turn,
+          explanation: results.judge_verdict.explanation,
+          excerpt: results.judge_verdict.excerpt ?? "",
+        }
+      : undefined,
   };
 }

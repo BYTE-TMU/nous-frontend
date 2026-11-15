@@ -3,10 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { ApiError, getRun, getRunJudgements, getRunTurns } from "@/lib/api";
+import {
+  ApiError,
+  getRun,
+  getRunJudgements,
+  getRunResults,
+  getRunTurns,
+} from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
+import RunControls from "./RunControls";
 import { toExperimentView, type ExperimentView } from "./toExperimentView";
 
 const POLL_MS = 3000;
@@ -45,7 +52,12 @@ export default function ExperimentPage({ runId }: { runId: string }) {
           getRunTurns(runId, token),
           getRunJudgements(runId, token),
         ]);
-        const view = toExperimentView(run, messages, judgements);
+        // The verdict exists only once the run is completed (other states answer 409).
+        const results =
+          run.state === "completed"
+            ? await getRunResults(runId, token).catch(() => undefined)
+            : undefined;
+        const view = toExperimentView(run, messages, judgements, results);
         setLoad({ state: "ready", view });
         if (view.live) timer.current = setTimeout(() => void fetchRun(false), POLL_MS);
       } catch (failure) {
@@ -70,6 +82,12 @@ export default function ExperimentPage({ runId }: { runId: string }) {
     },
     [runId],
   );
+
+  // After pause, resume or stop: show the new state now instead of waiting for the next poll.
+  const refresh = useCallback(() => {
+    clearTimeout(timer.current);
+    void fetchRun(false);
+  }, [fetchRun]);
 
   useEffect(() => {
     void fetchRun(true);
@@ -116,6 +134,7 @@ export default function ExperimentPage({ runId }: { runId: string }) {
         status={view.status}
         attacker={view.attacker}
         defender={view.defender}
+        controls={<RunControls runId={runId} state={view.state} onChanged={refresh} />}
       />
       <ChatBody view={view} />
     </main>
