@@ -1,5 +1,6 @@
-// Placeholder wordmark — the wireframes say "insert Nous logo". Swap in the real
-// asset here and every auth screen picks it up.
+import Image from "next/image";
+
+// Wordmark used at the top of every auth screen.
 export function NousLogo() {
-  return <span className="text-3xl font-light tracking-tight">Nous</span>;
+  return <Image src="/brand/nous-wordmark.svg" alt="Nous" width={116} height={32} priority />;
 }

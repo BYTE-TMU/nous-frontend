@@ -28,10 +28,10 @@ const STATUS_CONFIG = {
   [ExperimentStatusEnum.IN_PROGRESS]: {
     label: "IN PROGRESS",
     icon: CircleIcon,
-    text: "text-blue-400",
-    border: "border-blue-400",
-    bg: "bg-blue-100",
-    iconFill: "fill-blue-400",
+    text: "text-status-in-progress",
+    border: "border-status-in-progress",
+    bg: "bg-status-in-progress/10",
+    iconFill: "fill-status-in-progress",
   },
   [ExperimentStatusEnum.BROKE]: {
     label: "BROKE",
@@ -44,9 +44,9 @@ const STATUS_CONFIG = {
   [ExperimentStatusEnum.INCONCLUSIVE]: {
     label: "INCONCLUSIVE",
     icon: Loading03Icon,
-    text: "text-gray-400",
-    border: "border-gray-400",
-    bg: "bg-gray-100",
+    text: "text-status-inconclusive",
+    border: "border-status-inconclusive",
+    bg: "bg-status-inconclusive/10",
     iconFill: "",
   },
 };

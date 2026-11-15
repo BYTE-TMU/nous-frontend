@@ -4,8 +4,96 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Brand primitives
+   Source: Figma "Nous - UI/UX Design" → Variable collection, plus the
+   "Brand Guidelines - Ranjit" frame (Hi-fi Mockups). Keep names in sync with
+   Figma. Every token here becomes a CSS variable *and* a Tailwind utility:
+     --color-signal-lime → bg-signal-lime, text-signal-lime, border-signal-lime …
+     --font-mono         → font-mono
+   Prefer the semantic tokens further down (bg-primary, text-muted-foreground …)
+   in components; reach for primitives when the meaning is brand-specific
+   (attacker/defender/judge roles, colour index, status).
+   ========================================================================== */
+@theme {
+  /* Core colours */
+  --color-signal-lime: #ddfc24;   /* Primary brand colour – the Judge, primary actions */
+  --color-impact-green: #b4e33f;  /* Secondary brand colour – hover */
+  --color-deep-forest: #285337;   /* Depth – Judge verdict + results panels */
+
+  /* Neutral colours */
+  --color-night: #0a0c0a;         /* Background */
+  --color-ink: #121512;           /* Page sections, sidebar */
+  --color-carbon: #1a1d1a;        /* Cards, inputs, modals */
+  --color-input-fill: #252525;    /* Figma "Input" – input field fill */
+  --color-graphite: #343434;      /* Borders, dividers */
+  --color-smoke: #8a8f8a;         /* Muted text, placeholders */
+  --color-ash: #d9d9d9;           /* Secondary text, icons */
+  --color-paper: #f5f5f0;         /* Possible light-mode background */
+  --color-white: #ffffff;         /* Primary text on dark background */
+
+  /* Role colours */
+  --color-fox-red: #ff6b3d;       /* Attacker */
+  --color-blue-freeze: #7fe7e0;   /* Defender */
+  --color-attacker: var(--color-fox-red);
+  --color-defender: var(--color-blue-freeze);
+  --color-judge: var(--color-signal-lime);
+
+  /* Status */
+  --color-status-in-progress: #5ca8ff; /* Pulsing dot – run is live */
+  --color-status-broke: #f0524c;       /* Diamond – Judge confirms a break */
+  --color-status-inconclusive: var(--color-smoke); /* Spinning dashed circle */
+
+  /* Colour index 1–6 (bar graphs + heatmaps, held → broke) */
+  --color-index-1: #7fe7e0; /* Freeze        – Firm Adherence */
+  --color-index-2: #b4e33f; /* Impact Green  – Claim Acknowledgment */
+  --color-index-3: #ffd23f; /* Amber         – Boundary Softening */
+  --color-index-4: #ff9a3d; /* Orange        – Partial Facilitation */
+  --color-index-5: #ff5a3d; /* Ember         – Near-Break */
+  --color-index-6: #c21f3a; /* Crimson       – Full Break */
+
+  /* Gradients (Brand Guidelines §02). Use via the bg-gradient-* utilities below. */
+  --gradient-aurora: linear-gradient(180deg, #7fe7e0 0%, #ff6b3d 55%, #ddfc24 100%);
+  --gradient-duel: linear-gradient(90deg, #ff6b3d 0%, #7fe7e0 100%);
+  --gradient-primary: linear-gradient(135deg, #ddfc24 0%, #b4e33f 100%);
+  --gradient-break: linear-gradient(135deg, #ff9a3d 0%, #f0524c 50%, #c21f3a 100%);
+  --gradient-index: linear-gradient(90deg, #7fe7e0, #b4e33f, #ffd23f, #ff9a3d, #ff5a3d, #c21f3a);
+  --gradient-glow: radial-gradient(ellipse at top, rgb(221 252 36 / 0.16) 0%, rgb(10 12 10 / 0) 70%);
+}
+
+/* Login + password-reset panels, title cards. Guideline pairs it with a 30% layer blur. */
+@utility bg-gradient-aurora {
+  background-image: var(--gradient-aurora);
+}
+/* Attacker → Defender connector, live run progress bar. */
+@utility bg-gradient-duel {
+  background-image: var(--gradient-duel);
+}
+/* Primary buttons ("Create new experiment", "Start run", "Log in" hover), selected tab. */
+@utility bg-gradient-primary {
+  background-image: var(--gradient-primary);
+}
+/* Cited breaking turn in the transcript (only the turn the Judge cites). */
+@utility bg-gradient-break {
+  background-image: var(--gradient-break);
+}
+/* Heatmap legend, colour index 1 → 6. */
+@utility bg-gradient-index {
+  background-image: var(--gradient-index);
+}
+/* Subtle lime glow behind dashboard, login, empty states. */
+@utility bg-gradient-glow {
+  background-image: var(--gradient-glow);
+}
+
+/* ==========================================================================
+   Semantic tokens (shadcn). Mapped onto the brand primitives above.
+   ========================================================================== */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  /* Font/Sans = Geist, Font/Mono = Geist Mono (loaded via next/font in app/layout.tsx) */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -43,72 +131,45 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+/* Nous is dark-first: the guideline's neutral roles describe a dark UI
+   (Paper is only noted as a possible light-mode background). :root and .dark
+   share the same mapping until a light theme is designed. */
+:root,
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+
+  --background: var(--color-night);
+  --foreground: var(--color-white);
+  --card: var(--color-carbon);
+  --card-foreground: var(--color-white);
+  --popover: var(--color-carbon);
+  --popover-foreground: var(--color-white);
+  --primary: var(--color-signal-lime);
+  --primary-foreground: var(--color-night);
+  --secondary: var(--color-graphite);
+  --secondary-foreground: var(--color-white);
+  --muted: var(--color-ink);
+  --muted-foreground: var(--color-smoke);
+  --accent: var(--color-graphite);
+  --accent-foreground: var(--color-white);
+  --destructive: var(--color-status-broke);
+  --border: var(--color-graphite);
+  --input: var(--color-input-fill);
+  --ring: var(--color-signal-lime);
+  --chart-1: var(--color-index-1);
+  --chart-2: var(--color-index-2);
+  --chart-3: var(--color-index-3);
+  --chart-4: var(--color-index-4);
+  --chart-5: var(--color-index-6);
+  --radius: 0.625rem;
+  --sidebar: var(--color-ink);
+  --sidebar-foreground: var(--color-white);
+  --sidebar-primary: var(--color-signal-lime);
+  --sidebar-primary-foreground: var(--color-night);
+  --sidebar-accent: var(--color-carbon);
+  --sidebar-accent-foreground: var(--color-white);
+  --sidebar-border: var(--color-graphite);
+  --sidebar-ring: var(--color-signal-lime);
 }
 
 @layer base {
