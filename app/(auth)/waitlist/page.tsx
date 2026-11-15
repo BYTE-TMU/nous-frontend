@@ -2,9 +2,10 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function WaitlistPage() {
+function WaitlistContent() {
   const searchParams = useSearchParams();
   const status = searchParams.get("status") ?? "pending";
 
@@ -35,5 +36,13 @@ export default function WaitlistPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function WaitlistPage() {
+  return (
+    <Suspense fallback={null}>
+      <WaitlistContent />
+    </Suspense>
   );
 }
