@@ -31,7 +31,7 @@ describe("api.login", () => {
     const result = await apiLogin({ email: "me@nous.dev", password: "pw" });
     expect(result.access_token).toBe("abc");
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    // The running backend has no /api prefix, whatever openapi.yaml says.
+    // The backend and openapi.yaml agree: no /api prefix.
     expect(url).toMatch(/^https?:\/\/[^/]+\/auth\/login$/);
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body as string)).toEqual({ email: "me@nous.dev", password: "pw" });

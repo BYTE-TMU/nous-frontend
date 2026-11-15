@@ -281,4 +281,4 @@ The GET endpoints return fields that cannot be created today. Please add these t
 |---|---|---|
 | Q1 | **`held` versus `inconclusive`.** The transcript frames say *Held*; the list frame says *Inconclusive* (shown at 10 / 10 turns). Proposal: `held` = turn limit reached with no break; `inconclusive` = stopped early by the researcher, or the judge could not decide. | Nancy, Johan |
 | Q2 | **Who writes `headline`**, backend or frontend? | Backend, Johan |
-| Q3 | **Is `contracts/openapi.yaml` still in use?** It is out of date (`/api` prefix, endpoints that no longer exist). If nothing consumes it, remove it rather than update it. | Backend |
+| Q3 | **Is `contracts/openapi.yaml` still in use?** Answered: yes. It matches the running backend's routes (13 paths, no `/api` prefix) and is the source `npm run generate:types` reads. Backend: keep it in step with `app/` (e.g. regenerate it from FastAPI's `/openapi.json`) and tag changes, since the frontend's types come from it. | Backend |

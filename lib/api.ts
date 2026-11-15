@@ -1,47 +1,25 @@
 // The ONLY place backend is called from.
-// Request and response shapes are written by hand; they mirror nous-backend's
-// app/schemas/auth.py and app/schemas/runs.py.
-export type LoginRequest = { email: string; password: string };
-export type TokenResponse = { access_token: string; token_type: string };
+// Request and response types come from lib/types.ts, generated from
+// nous-backend/contracts/openapi.yaml (`npm run generate:types`). That file is the
+// source of truth for the API contract; never hand-edit the generated types.
+import type { components } from "./types";
 
-export type RunCreateRequest = {
-  name: string;
-  attacker_model: string;
-  defender_model: string;
-  /** A preset persona name, e.g. "maya-2". */
-  defender_persona?: string | null;
-  /** Custom prompt text. The backend uses it instead of `defender_persona`. */
-  defender_persona_prompt?: string | null;
-  max_turns?: number;
-};
+type Schemas = components["schemas"];
 
-export type RunStatus =
-  | "pending"
-  | "running"
-  | "pausing"
-  | "paused"
-  | "stopping"
-  | "completed"
-  | "failed";
+export type LoginRequest = Schemas["LoginRequest"];
+export type TokenResponse = Schemas["TokenResponse"];
 
-export type RunOut = {
-  run_id: string;
-  name: string;
-  status: RunStatus;
-  attacker_model: string;
-  defender_model: string;
-  attacker_prompt: string | null;
-  defender_persona: string | null;
-  defender_persona_prompt: string | null;
-  max_turns: number;
-};
+/** The schema marks defaulted fields as required; on the wire they are optional. */
+export type RunCreateRequest = Omit<Schemas["RunCreateRequest"], "max_turns" | "judge_type"> &
+  Partial<Pick<Schemas["RunCreateRequest"], "max_turns" | "judge_type">>;
+
+export type RunOut = Schemas["RunOut"];
+export type RunStatus = RunOut["status"];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-// nous-backend mounts its routers without an /api prefix (app/main.py), so login
-// is served at /auth/login. contracts/openapi.yaml still documents /api/auth/*,
-// which 404s against the running backend — the contract is wrong, not this path.
-// Revisit when the backend fixes its contract or adds the prefix.
+// nous-backend mounts its routers without an /api prefix (app/main.py), and
+// contracts/openapi.yaml documents the same paths, so login is served at /auth/login.
 const AUTH_PATH = "/auth";
 
 /** `status` is 0 when the request never reached the backend. */
@@ -138,4 +116,50 @@ export function rejectWaitlistRequest(
 /** Creates a run. The backend answers 201 with the new run, or 401 without a valid token. */
 export function createRun(body: RunCreateRequest, token: string | null): Promise<RunOut> {
   return request<RunOut>("/runs", { method: "POST", body: JSON.stringify(body) }, token);
+}
+
+export type RunListItem = Schemas["RunListItem"];
+
+/** The signed-in user's runs. Needs a token: the backend answers 401 without one. */
+export async function listRuns(token: string | null): Promise<RunListItem[]> {
+  const response = await request<Schemas["RunListResponse"]>("/runs", { method: "GET" }, token);
+  return response.items;
+}
+export type RunSummary = Schemas["RunSummary"];
+export type RunMessage = Schemas["MessageOut"];
+export type RunJudgements = Schemas["RunJudgementsOut"];
+
+const runPath = (runId: string) => `/runs/${encodeURIComponent(runId)}`;
+
+export function getRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(runPath(runId), { method: "GET" }, token);
+}
+
+/** Attacker and defender messages in order; both messages of a turn share its number. */
+export function getRunTurns(runId: string, token: string | null): Promise<RunMessage[]> {
+  return request<RunMessage[]>(`${runPath(runId)}/turns`, { method: "GET" }, token);
+}
+
+export function getRunJudgements(runId: string, token: string | null): Promise<RunJudgements> {
+  return request<RunJudgements>(`${runPath(runId)}/judgements`, { method: "GET" }, token);
+}
+
+export type RunResults = Schemas["RunResultsOut"];
+
+/** Only available once the run is `completed`; any other state answers 409. */
+export function getRunResults(runId: string, token: string | null): Promise<RunResults> {
+  return request<RunResults>(`${runPath(runId)}/results`, { method: "GET" }, token);
+}
+
+/** Pause, resume and stop answer with the run's new state, or 409 if it can't change. */
+export function pauseRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(`${runPath(runId)}/pause`, { method: "POST" }, token);
+}
+
+export function resumeRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(`${runPath(runId)}/resume`, { method: "POST" }, token);
+}
+
+export function stopRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(`${runPath(runId)}/stop`, { method: "POST" }, token);
 }

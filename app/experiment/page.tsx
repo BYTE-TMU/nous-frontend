@@ -1,12 +1,11 @@
-import ChatBody from "@/components/experiment/ChatBody";
-import ChatHeader from "@/components/experiment/ChatHeader";
-import ExperimentOverview from "@/components/experiment/ExperimentOverview";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return (
-    <main className="flex h-full flex-col items-center justify-between">
-      <ChatHeader />
-      <ChatBody />
-    </main>
-  );
+// Experiments live at /experiment/{id}. Send the bare route (and old ?run= links) home.
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ run?: string }>;
+}) {
+  const { run } = await searchParams;
+  redirect(run ? `/experiment/${encodeURIComponent(run)}` : "/");
 }

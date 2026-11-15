@@ -1,18 +1,16 @@
 import Transcript from "@/components/transcript/Transcript";
-import {
-  PLACEHOLDER_MODELS,
-  PLACEHOLDER_TURNS,
-} from "@/components/transcript/placeholder-data";
+import type { Turn } from "@/components/transcript/types";
 
-export default function ChatContent() {
-  // Placeholder data until the experiment read endpoint exists.
+type Props = {
+  turns: Turn[];
+  attackerModel: string;
+  defenderModel: string;
+};
+
+export default function ChatContent({ turns, attackerModel, defenderModel }: Props) {
   return (
     <div className="col-span-6">
-      <Transcript
-        turns={PLACEHOLDER_TURNS}
-        attackerModel={PLACEHOLDER_MODELS.attacker}
-        defenderModel={PLACEHOLDER_MODELS.defender}
-      />
+      <Transcript turns={turns} attackerModel={attackerModel} defenderModel={defenderModel} />
     </div>
   );
 }

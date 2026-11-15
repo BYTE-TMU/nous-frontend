@@ -1,11 +1,6 @@
-import { NewExperimentButton } from "@/components/new-experiment/NewExperimentButton";
+import { redirect } from "next/navigation";
 
-// Placeholder until the dashboard lands (see the dashboard PR). It only hosts the
-// new-experiment trigger so the dialog can be tried out.
+// The dashboard lives at "/". Kept so old links still work.
 export default function Page() {
-  return (
-    <main className="p-6">
-      <NewExperimentButton />
-    </main>
-  );
+  redirect("/");
 }
