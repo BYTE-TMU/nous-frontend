@@ -2,7 +2,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 // next/font/google is a build-time transform in Next and is not callable under vitest.
-vi.mock("next/font/google", () => ({ Geist: () => ({ variable: "--font-geist-sans" }) }));
+vi.mock("next/font/google", () => ({
+  Geist: () => ({ variable: "--font-geist-sans" }),
+  Geist_Mono: () => ({ variable: "--font-geist-mono" }),
+}));
 
 import { metadata } from "../app/layout";
 
