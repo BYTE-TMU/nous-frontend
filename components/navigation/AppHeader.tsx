@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/Button";
+import { UserMenu } from "./UserMenu";
 
 export default function AppHeader() {
 
@@ -16,10 +16,7 @@ export default function AppHeader() {
           Settings
         </Link>
         </Button>
-        <Avatar size="default">
-          <AvatarImage src="/placeholder.svg" />
-          <AvatarFallback>JD</AvatarFallback>
-        </Avatar>
+        <UserMenu />
       </div>
     </header>
   )
