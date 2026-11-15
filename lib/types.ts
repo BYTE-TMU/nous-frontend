@@ -4,6 +4,44 @@
  */
 
 export interface paths {
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liveness check */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            status?: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -13,8 +51,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Register */
-        post: operations["register_auth_register_post"];
+        /** Register a new user */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RegisterRequest"];
+                };
+            };
+            responses: {
+                /** @description User created, token issued */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TokenResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -30,8 +91,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login */
-        post: operations["login_auth_login_post"];
+        /** Log in with email and password */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LoginRequest"];
+                };
+            };
+            responses: {
+                /** @description Token issued */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TokenResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -45,8 +129,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Me */
-        get: operations["me_auth_me_get"];
+        /** Current authenticated user */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The current authenticated user */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         post?: never;
         delete?: never;
@@ -62,11 +165,63 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Runs */
-        get: operations["list_runs_runs_get"];
+        /** List the current user's runs */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Case-insensitive substring search across run name and description */
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description User's runs, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunListResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
-        /** Create Run */
-        post: operations["create_run_runs_post"];
+        /** Create a new run */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RunCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description Run created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunOut"];
+                    };
+                };
+                /** @description Validation error, including when neither defender_persona nor defender_persona_prompt is given (the judge needs a rule). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -80,29 +235,76 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Run */
-        get: operations["get_run_runs__run_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Run */
-        delete: operations["delete_run_runs__run_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/runs/{run_id}/results": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+        /** Get a run */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The requested run */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunSummary"];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
         };
-        /** Get Run Results */
-        get: operations["get_run_results_runs__run_id__results_get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a run and its associated turn and judge records
+         * @description Only paused, completed, or failed runs can be deleted.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Run and associated records deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Run is active and cannot be deleted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -115,8 +317,88 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Run Turns */
-        get: operations["get_run_turns_runs__run_id__turns_get"];
+        /** Get a run's turns */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Ordered attacker and defender messages for the run */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MessageOut"][];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the final results for a completed run */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Run results and judge verdicts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunResultsOut"];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Results are unavailable until the run is completed */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         put?: never;
         post?: never;
         delete?: never;
@@ -132,8 +414,36 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Run Judgements */
-        get: operations["get_run_judgements_runs__run_id__judgements_get"];
+        /** Get the judge results for a run */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Judge results per defender reply, plus whether and where the run broke */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunJudgementsOut"];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         put?: never;
         post?: never;
         delete?: never;
@@ -149,11 +459,101 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Turn Judgement */
-        get: operations["get_turn_judgement_runs__run_id__turns__turn_number__judgement_get"];
+        /**
+         * Get the judge result for one turn
+         * @description Uses the same turn numbering as GET /runs/{run_id}/turns. For a defender turn, returns that reply's judgement. For an attacker turn, returns the judgement of the defender's reply to it (the next message). turn_number in the response is always the judged defender message.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                    /** @description Same numbering as GET /runs/{run_id}/turns. For an attacker turn, returns the judgement of the defender's reply to it. */
+                    turn_number: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The judgement for this defender turn, or for the defender's reply to this attacker turn. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JudgeResultOut"];
+                    };
+                };
+                /** @description One of: "Run not found" (missing or owned by another user), "Turn not found", "The defender hasn't replied to this turn yet", or "No judgement for this turn". */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description turn_number is less than 1 */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         put?: never;
-        /** Submit Human Judgement */
-        post: operations["submit_human_judgement_runs__run_id__turns__turn_number__judgement_post"];
+        /**
+         * Submit a human judgement for the latest defender reply
+         * @description Requires a human-judged run in awaiting_judgement. A score of 2 ends the run; lower scores queue another round unless the round limit is reached.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                    turn_number: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HumanJudgement"];
+                };
+            };
+            responses: {
+                /** @description Saved judgement and current run state */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunOut"];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Run is not awaiting this human judgement */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Judgement was saved but the next round could not be queued */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -169,8 +569,43 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Pause Run */
-        post: operations["pause_run_runs__run_id__pause_post"];
+        /** Request a cooperative pause for a running run */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current run state; pause takes effect at a safe point */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunSummary"];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Run cannot be paused in its current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -186,8 +621,50 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Resume Run */
-        post: operations["resume_run_runs__run_id__resume_post"];
+        /** Resume a paused run */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Resumed run */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunSummary"];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Run cannot be resumed in its current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Could not enqueue the resumed run */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -203,25 +680,50 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Stop Run */
-        post: operations["stop_run_runs__run_id__stop_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+        /** Request a cooperative stop for a run */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current run state; stopping completes after the current message */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunSummary"];
+                    };
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Run cannot be stopped in its current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Could not enqueue run finalization */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
         };
-        /** Health */
-        get: operations["health_health_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -232,325 +734,174 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** HumanJudgement */
-        HumanJudgement: {
-            /** Score */
-            score: number;
-            /**
-             * Explanation
-             * @default
-             */
-            explanation: string;
-            /** Evidence */
-            evidence?: string[];
-        };
-        /**
-         * JudgeResultOut
-         * @description One judge_results row, used to endpoint GET /runs/{run_id}/judgements.
-         */
-        JudgeResultOut: {
-            /**
-             * Turn Id
-             * Format: uuid
-             */
-            turn_id: string;
-            /** Turn Number */
-            turn_number: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "completed" | "failed";
-            /** Score */
-            score: number | null;
-            /** Explanation */
-            explanation: string | null;
-            /** Evidence */
-            evidence: string[] | null;
-            /** Judge Model */
-            judge_model: string;
-            /** Input Tokens */
-            input_tokens: number | null;
-            /** Output Tokens */
-            output_tokens: number | null;
-            /** Cost */
-            cost: number | null;
-            /** Judged At */
-            judged_at: string | null;
-        };
-        /** LoginRequest */
-        LoginRequest: {
-            /**
-             * Email
-             * Format: email
-             * @example testuser1@gmail.com
-             */
-            email: string;
-            /**
-             * Password
-             * @example testuser123
-             */
-            password: string;
-        };
-        /** MessageOut */
-        MessageOut: {
-            /** Turn Number */
-            turn_number: number;
-            /** Speaker */
-            speaker: string;
-            /** Text */
-            text: string;
-            /** Input Tokens */
-            input_tokens: number | null;
-            /** Output Tokens */
-            output_tokens: number | null;
-        };
-        /** RegisterRequest */
         RegisterRequest: {
-            /**
-             * Email
-             * Format: email
-             */
+            /** Format: email */
             email: string;
-            /** Password */
             password: string;
         };
-        /** RunCost */
-        RunCost: {
-            /** Total Usd */
-            total_usd: number;
-            /** Total Tokens */
-            total_tokens: number;
-            /** Breakdown */
-            breakdown: components["schemas"]["RunCostBreakdown"][];
+        LoginRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
         };
-        /** RunCostBreakdown */
-        RunCostBreakdown: {
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "attacker" | "defender" | "judge";
-            /** Model */
-            model: string | null;
-            /** Tokens */
-            tokens: number;
-            /** Usd */
-            usd: number;
+        TokenResponse: {
+            access_token: string;
+            /** @default bearer */
+            token_type: string;
         };
-        /** RunCreateRequest */
+        UserResponse: {
+            id: string;
+            email: string;
+        };
         RunCreateRequest: {
-            /** Name */
             name: string;
-            /** Description */
             description?: string | null;
-            /** Attacker Model */
             attacker_model: string;
-            /** Defender Model */
             defender_model: string;
-            /** Defender Persona */
+            /** @description Persona name from nous-ai GET /prompts, e.g. maya-2. Omit for none. */
             defender_persona?: string | null;
-            /** Defender Persona Prompt */
+            /** @description Custom defender prompt text. Wins over defender_persona. */
             defender_persona_prompt?: string | null;
-            /**
-             * Max Turns
-             * @default 10
-             */
+            /** @default 10 */
             max_turns: number;
             /**
-             * Judge Type
              * @default llm
              * @enum {string}
              */
             judge_type: "human" | "llm";
         };
-        /** RunJudgeVerdict */
-        RunJudgeVerdict: {
-            /** Cited Turn */
-            cited_turn: number;
-            /** Explanation */
-            explanation: string;
-            /** Excerpt */
-            excerpt: string | null;
-        };
-        /** RunJudgementsOut */
-        RunJudgementsOut: {
-            /**
-             * Run Id
-             * Format: uuid
-             */
+        RunOut: {
+            /** Format: uuid */
             run_id: string;
-            /** Broke */
-            broke: boolean;
-            /** Break Turn Number */
-            break_turn_number: number | null;
-            /** Judgements */
-            judgements: components["schemas"]["JudgeResultOut"][];
-        };
-        /**
-         * RunListItem
-         * @description Summary fields shown in the user's run list.
-         */
-        RunListItem: {
-            /**
-             * Run Id
-             * Format: uuid
-             */
-            run_id: string;
-            /** Name */
             name: string;
-            /** Description */
-            description: string | null;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "pending" | "running" | "pausing" | "paused" | "stopping" | "completed" | "failed";
-            /** Attacker Model */
+            description?: string | null;
+            /** @enum {string} */
+            status: "pending" | "running" | "judging" | "pausing" | "paused" | "awaiting_judgement" | "stopping" | "completed" | "failed";
             attacker_model: string;
-            /** Defender Model */
             defender_model: string;
-            /** Turns Completed */
+            /** @description Exact text sent to the attacker. Filled when the run starts. */
+            attacker_prompt?: string | null;
+            defender_persona?: string | null;
+            /** @description Exact text sent to the defender. Filled when the run starts. */
+            defender_persona_prompt?: string | null;
+            max_turns: number;
+            /** @enum {string} */
+            judge_type?: "human" | "llm";
+        };
+        MessageOut: {
+            turn_number: number;
+            /** @enum {string} */
+            speaker: "attacker" | "defender";
+            text: string;
+            input_tokens: number | null;
+            output_tokens: number | null;
+        };
+        RunSummary: {
+            /** Format: uuid */
+            run_id: string;
+            name: string;
+            description: string | null;
+            /** @enum {string} */
+            state: "pending" | "running" | "judging" | "pausing" | "paused" | "awaiting_judgement" | "stopping" | "completed" | "failed";
+            attacker_model: string;
+            defender_model: string;
+            turns_completed: number;
+            cost: {
+                /** Format: double */
+                total_usd: number;
+                total_tokens: number;
+                breakdown: {
+                    /** @enum {string} */
+                    role: "attacker" | "defender" | "judge";
+                    model: string | null;
+                    tokens: number;
+                    /** Format: double */
+                    usd: number;
+                }[];
+            };
+            max_turns: number;
+            /** Format: date-time */
+            created_at: string;
+            defender_persona: string | null;
+            defender_prompt: string | null;
+            attacker_prompt: string | null;
+        };
+        RunListItem: {
+            /** Format: uuid */
+            run_id: string;
+            name: string;
+            description: string | null;
+            /** @enum {string} */
+            state: "pending" | "running" | "pausing" | "paused" | "stopping" | "completed" | "failed";
+            attacker_model: string;
+            defender_model: string;
             turns_completed: number;
             cost: components["schemas"]["RunCost"];
-            /** Max Turns */
             max_turns: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
+            /** Format: date-time */
             created_at: string;
         };
-        /** RunListResponse */
-        RunListResponse: {
-            /** Items */
-            items: components["schemas"]["RunListItem"][];
+        RunCost: {
+            total_usd: number;
+            total_tokens: number;
+            breakdown: {
+                /** @enum {string} */
+                role: "attacker" | "defender" | "judge";
+                model: string | null;
+                tokens: number;
+                usd: number;
+            }[];
         };
-        /** RunOut */
-        RunOut: {
-            /**
-             * Run Id
-             * Format: uuid
-             */
-            run_id: string;
-            /** Name */
-            name: string;
-            /** Description */
-            description?: string | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "running" | "judging" | "pausing" | "paused" | "awaiting_judgement" | "stopping" | "completed" | "failed";
-            /** Attacker Model */
-            attacker_model: string;
-            /** Defender Model */
-            defender_model: string;
-            /** Attacker Prompt */
-            attacker_prompt?: string | null;
-            /** Defender Persona */
-            defender_persona?: string | null;
-            /** Defender Persona Prompt */
-            defender_persona_prompt?: string | null;
-            /** Max Turns */
-            max_turns: number;
-            /**
-             * Judge Type
-             * @default llm
-             * @enum {string}
-             */
-            judge_type: "human" | "llm";
-        };
-        /** RunResultTurn */
-        RunResultTurn: {
-            /** Turn */
-            turn: number;
-            /** Classification */
-            classification?: number | null;
-        };
-        /** RunResultsOut */
         RunResultsOut: {
-            /**
-             * Outcome
-             * @enum {string}
-             */
+            /** @enum {string} */
             outcome: "broke" | "held";
-            /** Break Turn */
             break_turn: number | null;
-            /** Turns Completed */
             turns_completed: number;
             judge_verdict: components["schemas"]["RunJudgeVerdict"] | null;
-            /** Per Turn */
             per_turn: components["schemas"]["RunResultTurn"][];
             cost: components["schemas"]["RunCost"];
         };
-        /**
-         * RunSummary
-         * @description Run detail summary returned by run detail and control endpoints.
-         */
-        RunSummary: {
-            /**
-             * Run Id
-             * Format: uuid
-             */
+        RunJudgeVerdict: {
+            cited_turn: number;
+            explanation: string;
+            excerpt: string | null;
+        };
+        RunResultTurn: {
+            turn: number;
+            classification: number | null;
+        };
+        RunListResponse: {
+            items: components["schemas"]["RunListItem"][];
+        };
+        HumanJudgement: {
+            score: number;
+            /** @default  */
+            explanation: string;
+            evidence?: string[];
+        };
+        JudgeResultOut: {
+            /** Format: uuid */
+            turn_id: string;
+            turn_number: number;
+            /** @enum {string} */
+            status: "pending" | "completed" | "failed";
+            /** @description Null only when status is 'failed'. Scores are from 0 to 2. */
+            score: number | null;
+            explanation: string | null;
+            evidence: string[] | null;
+            judge_model: string;
+            input_tokens: number | null;
+            output_tokens: number | null;
+            cost: number | null;
+            /** Format: date-time */
+            judged_at: string | null;
+        };
+        RunJudgementsOut: {
+            /** Format: uuid */
             run_id: string;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "pending" | "running" | "judging" | "pausing" | "paused" | "awaiting_judgement" | "stopping" | "completed" | "failed";
-            /** Attacker Model */
-            attacker_model: string;
-            /** Defender Model */
-            defender_model: string;
-            /** Turns Completed */
-            turns_completed: number;
-            cost: components["schemas"]["RunCost"];
-            /** Max Turns */
-            max_turns: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Defender Persona */
-            defender_persona: string | null;
-            /** Defender Prompt */
-            defender_prompt: string | null;
-            /** Attacker Prompt */
-            attacker_prompt: string | null;
-        };
-        /** TokenResponse */
-        TokenResponse: {
-            /** Access Token */
-            access_token: string;
-            /**
-             * Token Type
-             * @default bearer
-             */
-            token_type: string;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
+            broke: boolean;
+            break_turn_number: number | null;
+            judgements: components["schemas"]["JudgeResultOut"][];
         };
     };
     responses: never;
@@ -560,495 +911,4 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export interface operations {
-    register_auth_register_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    me_auth_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-    };
-    list_runs_runs_get: {
-        parameters: {
-            query?: {
-                /** @description Search run name and description */
-                q?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_run_runs_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RunCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_run_runs__run_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_run_runs__run_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_run_results_runs__run_id__results_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunResultsOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_run_turns_runs__run_id__turns_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_run_judgements_runs__run_id__judgements_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunJudgementsOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_turn_judgement_runs__run_id__turns__turn_number__judgement_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-                /** @description Same numbering as GET /runs/{run_id}/turns. For an attacker turn, returns the judgement of the defender's reply to it. */
-                turn_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JudgeResultOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submit_human_judgement_runs__run_id__turns__turn_number__judgement_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-                turn_number: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HumanJudgement"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    pause_run_runs__run_id__pause_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resume_run_runs__run_id__resume_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    stop_run_runs__run_id__stop_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    health_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-    };
-}
+export type operations = Record<string, never>;

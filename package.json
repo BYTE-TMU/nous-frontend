@@ -9,7 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "generate:types": "openapi-typescript ${OPENAPI_SOURCE:-http://localhost:8000/openapi.json} -o lib/types.ts"
+    "generate:types": "openapi-typescript ../nous-backend/contracts/openapi.yaml -o lib/types.ts"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.4.0",

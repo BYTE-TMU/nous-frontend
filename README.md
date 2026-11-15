@@ -38,7 +38,7 @@ Full product definition: [`NOUS-PROJECT-SPEC.md`](NOUS-PROJECT-SPEC.md).
 ```bash
 cp .env.example .env.local
 npm install
-npm run generate:types         # requires the backend running on :8000, or set OPENAPI_SOURCE
+npm run generate:types         # requires nous-backend checked out as a sibling
 npm run dev                    # :3000
 ```
 
@@ -71,7 +71,7 @@ Before opening a PR: `npm run lint && npm run typecheck && npm test`
 ## Settled decisions
 
 - **Auth:** self-issued JWT from `nous-backend`, not Firebase. `lib/auth.ts` handles storage and attachment.
-- **Types:** generated into `lib/types.ts` via `npm run generate:types`, never hand-edited. The OpenAPI document is the source of truth for the API contract. `nous-backend/contracts/openapi.yaml` is the intended home of that contract, but it is currently stale (`/api` prefix, no run routes), so until the backend regenerates it the script reads the running backend's `/openapi.json`. Point `OPENAPI_SOURCE` at the yaml once it is current. There is no separate contracts repo.
+- **Types:** generated from `nous-backend/contracts/openapi.yaml` via `npm run generate:types`. There is no separate contracts repo.
 - **Model output is rendered as received.** Messages, thoughts, and judge commentary are shown exactly as the backend returns them. The UI does not summarise, rewrite, or score them.
 
 ## Open questions

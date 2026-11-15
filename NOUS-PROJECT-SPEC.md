@@ -117,7 +117,7 @@ Running the whole conversation inside `nous-ai` would be simpler to write and wo
 
 ### 6.2 The contracts mechanism
 
-`contracts/` is the single definition point for shared shapes. `nous-ai` installs it as a package pinned to a `nous-backend` git tag, and the frontend's `lib/types.ts` is generated from the backend's OpenAPI document, which is the source of truth for the API contract (`contracts/openapi.yaml` once current; the live `/openapi.json` until then). A shape change lands in `contracts/` first, in its own PR, with a tag.
+`contracts/` is the single definition point for shared shapes. `nous-ai` installs it as a package pinned to a `nous-backend` git tag, and the frontend's `lib/types.ts` is generated from `contracts/openapi.yaml`. A shape change lands in `contracts/` first, in its own PR, with a tag.
 
 **Status:** `contracts/` still holds the old entity, extraction, and insight shapes and has no experiment or turn definitions. Replacing them is **Planned**.
 

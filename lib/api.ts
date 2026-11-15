@@ -1,7 +1,7 @@
 // The ONLY place backend is called from.
-// Request and response types come from lib/types.ts, generated from the backend's
-// OpenAPI document (`npm run generate:types`). That document is the source of truth
-// for the API contract; never hand-edit the generated file.
+// Request and response types come from lib/types.ts, generated from
+// nous-backend/contracts/openapi.yaml (`npm run generate:types`). That file is the
+// source of truth for the API contract; never hand-edit the generated types.
 import type { components } from "./types";
 
 type Schemas = components["schemas"];
@@ -18,10 +18,8 @@ export type RunStatus = RunOut["status"];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-// nous-backend mounts its routers without an /api prefix (app/main.py), so login
-// is served at /auth/login. contracts/openapi.yaml still documents /api/auth/*,
-// which 404s against the running backend — the contract is wrong, not this path.
-// Revisit when the backend fixes its contract or adds the prefix.
+// nous-backend mounts its routers without an /api prefix (app/main.py), and
+// contracts/openapi.yaml documents the same paths, so login is served at /auth/login.
 const AUTH_PATH = "/auth";
 
 /** `status` is 0 when the request never reached the backend. */
