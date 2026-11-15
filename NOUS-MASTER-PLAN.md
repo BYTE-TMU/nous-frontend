@@ -68,6 +68,7 @@ Steps 1 and 9 are small but easy to defer indefinitely. Step 1 is a precondition
 | D5 | Model roster and cost tier per role (spec Q7) | Step 2 |
 | D6 | Provider terms of service read and recorded, per provider offered | Any provider reaching researchers |
 | D7 | Where presets live (spec Q4) | Step 2 |
+| D8 | Frontend type generation (`npm run generate:api` from the backend's `/openapi.json`) enforced in CI | Step 4 |
 | D9 | Two-user isolation test for INV-4 | Step 3 |
 
 ## 6. Risks
