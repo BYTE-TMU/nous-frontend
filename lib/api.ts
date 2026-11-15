@@ -1,40 +1,21 @@
 // The ONLY place backend is called from.
-// Request and response shapes are written by hand; they mirror nous-backend's
-// app/schemas/auth.py and app/schemas/runs.py.
-export type LoginRequest = { email: string; password: string };
-export type TokenResponse = { access_token: string; token_type: string };
+// Request and response types come from lib/api-schema.d.ts, generated from the
+// backend's own OpenAPI document (`npm run generate:api`). That document is the
+// source of truth for the API contract; never hand-edit the generated file.
+// Note: contracts/openapi.yaml in nous-backend is stale and is NOT that document.
+import type { components } from "./api-schema";
 
-export type RunCreateRequest = {
-  name: string;
-  attacker_model: string;
-  defender_model: string;
-  /** A preset persona name, e.g. "maya-2". */
-  defender_persona?: string | null;
-  /** Custom prompt text. The backend uses it instead of `defender_persona`. */
-  defender_persona_prompt?: string | null;
-  max_turns?: number;
-};
+type Schemas = components["schemas"];
 
-export type RunStatus =
-  | "pending"
-  | "running"
-  | "pausing"
-  | "paused"
-  | "stopping"
-  | "completed"
-  | "failed";
+export type LoginRequest = Schemas["LoginRequest"];
+export type TokenResponse = Schemas["TokenResponse"];
 
-export type RunOut = {
-  run_id: string;
-  name: string;
-  status: RunStatus;
-  attacker_model: string;
-  defender_model: string;
-  attacker_prompt: string | null;
-  defender_persona: string | null;
-  defender_persona_prompt: string | null;
-  max_turns: number;
-};
+/** The schema marks defaulted fields as required; on the wire they are optional. */
+export type RunCreateRequest = Omit<Schemas["RunCreateRequest"], "max_turns" | "judge_type"> &
+  Partial<Pick<Schemas["RunCreateRequest"], "max_turns" | "judge_type">>;
+
+export type RunOut = Schemas["RunOut"];
+export type RunStatus = RunOut["status"];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 

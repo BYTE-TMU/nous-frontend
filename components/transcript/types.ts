@@ -1,4 +1,4 @@
-// Local view types for the transcript. These move to the generated `lib/types.ts`
+// Local view types for the transcript. These move to the generated `lib/api-schema.d.ts`
 // once the backend exposes experiment/turn read endpoints (master plan, step 3).
 
 export type MessageStatus = "complete" | "pending";

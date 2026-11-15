@@ -31,6 +31,6 @@ The transcript view: the product's core screen. Turn-organised display of one ex
 | `TranscriptMessageView.tsx` | one message: avatar, role and model, bubble, near-miss footer, reasoning |
 | `ReasoningTrace.tsx` | the model's thought process as a collapsible trace; also the pending ("thinking") state |
 | `TurnMarker.tsx` | the divider between turns |
-| `types.ts` | local view types; move to generated `lib/types.ts` once the API exists |
+| `types.ts` | local view types; move to generated `lib/api-schema.d.ts` once the API exists |
 
 Built on the shadcn `message`, `bubble`, `marker`, and `trace` components in `components/ui/`.

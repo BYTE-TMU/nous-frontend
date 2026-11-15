@@ -31,14 +31,13 @@ Full product definition: [`NOUS-PROJECT-SPEC.md`](NOUS-PROJECT-SPEC.md).
 - The transcript view: turns, thought process, judge commentary
 - Empty, loading, in-progress, and error states
 
-**Does not own:** business logic, running experiments, or judging (→ `nous-backend` and `nous-ai`); anything touching a model or a prompt (→ `nous-ai`); hand-written shared types (generated from `nous-backend/contracts/openapi.yaml`).
+**Does not own:** business logic, running experiments, or judging (→ `nous-backend` and `nous-ai`); anything touching a model or a prompt (→ `nous-ai`).
 
 ## Local setup
 
 ```bash
 cp .env.example .env.local
 npm install
-npm run generate:types         # requires nous-backend checked out as a sibling
 npm run dev                    # :3000
 ```
 
@@ -71,7 +70,7 @@ Before opening a PR: `npm run lint && npm run typecheck && npm test`
 ## Settled decisions
 
 - **Auth:** self-issued JWT from `nous-backend`, not Firebase. `lib/auth.ts` handles storage and attachment.
-- **Types:** generated from `nous-backend/contracts/openapi.yaml` via `npm run generate:types`. There is no separate contracts repo.
+- **API contract:** the backend's OpenAPI document (`GET /openapi.json`, produced by FastAPI from the real routes) is the source of truth. Types are generated from it into `lib/api-schema.d.ts` with `npm run generate:api` (needs the backend running; set `NEXT_PUBLIC_API_URL` if it is not on `localhost:8000`). Never edit the generated file; regenerate it and commit the diff whenever the backend API changes. `lib/api.ts` derives its request and response types from it. `lib/types.ts` still holds hand-written view types for shapes the backend does not expose yet (see [`BACKEND-ENDPOINTS.md`](BACKEND-ENDPOINTS.md)); move them to the generated types as endpoints land.
 - **Model output is rendered as received.** Messages, thoughts, and judge commentary are shown exactly as the backend returns them. The UI does not summarise, rewrite, or score them.
 
 ## Open questions

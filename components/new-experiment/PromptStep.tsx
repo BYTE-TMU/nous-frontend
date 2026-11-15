@@ -27,6 +27,11 @@ const suggestions = SUGGESTIONS.filter(
 export function PromptStep({ form, onChange, onNext }: PromptStepProps) {
   const nameId = useId();
 
+  // The backend rejects a run with no defender rule (422), so don't let the tester
+  // reach the submit step without one.
+  const { mode, custom, preset } = form.defenderPrompt;
+  const hasDefenderPrompt = mode === "preset" ? preset !== "" : custom.trim() !== "";
+
   // A suggestion fills its prompt as custom text, which the tester can then edit.
   function applySuggestion({ target, text }: Suggestion) {
     const key = target === "attacker" ? "attackerPrompt" : "defenderPrompt";
@@ -87,8 +92,13 @@ export function PromptStep({ form, onChange, onNext }: PromptStepProps) {
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <Button type="button" onClick={onNext}>
+      <div className="flex items-center justify-end gap-3">
+        {!hasDefenderPrompt && (
+          <span className="text-xs text-muted-foreground">
+            Add a defender prompt to continue.
+          </span>
+        )}
+        <Button type="button" onClick={onNext} disabled={!hasDefenderPrompt}>
           Next
         </Button>
       </div>
