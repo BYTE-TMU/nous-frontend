@@ -18,6 +18,7 @@ import { ExperimentStatusEnum } from "@/components/experiment/ExperimentStatus";
 import ExperimentCard, { type Experiment } from "./ExperimentCard";
 import ExperimentRow from "./ExperimentRow";
 import CreateExperimentCard from "./CreateExperimentCard";
+import { NewExperimentDialog } from "@/components/new-experiment/NewExperimentDialog";
 
 type ViewMode = "grid" | "list";
 
@@ -145,10 +146,16 @@ const MOCK_EXPERIMENTS: Experiment[] = [
   },
 ];
 
-function ExperimentGrid({ experiments }: { experiments: Experiment[] }) {
+function ExperimentGrid({
+  experiments,
+  onCreate,
+}: {
+  experiments: Experiment[];
+  onCreate: () => void;
+}) {
   return (
     <div className="grid grid-cols-4 gap-6">
-      <CreateExperimentCard />
+      <CreateExperimentCard onClick={onCreate} />
       {experiments.map((exp) => (
         <ExperimentCard key={exp.id} experiment={exp} />
       ))}
@@ -156,7 +163,13 @@ function ExperimentGrid({ experiments }: { experiments: Experiment[] }) {
   );
 }
 
-function ExperimentList({ experiments }: { experiments: Experiment[] }) {
+function ExperimentList({
+  experiments,
+  onCreate,
+}: {
+  experiments: Experiment[];
+  onCreate: () => void;
+}) {
   return (
     <div>
       <div className="grid grid-cols-[180px_1fr_1fr_1fr_100px_140px_100px] items-center gap-4 rounded-t-2xl border-2 border-border px-6 py-4">
@@ -171,7 +184,11 @@ function ExperimentList({ experiments }: { experiments: Experiment[] }) {
         <span className="text-sm font-semibold underline">Turns</span>
       </div>
 
-      <div className="flex items-center gap-4 border-x-2 border-b-2 border-border px-6 py-4 cursor-pointer hover:bg-muted transition-colors">
+      <button
+        type="button"
+        onClick={onCreate}
+        className="flex w-full items-center gap-4 border-x-2 border-b-2 border-border px-6 py-4 text-left cursor-pointer hover:bg-muted transition-colors"
+      >
         <HugeiconsIcon
           icon={PlusSignCircleIcon}
           size={32}
@@ -180,7 +197,7 @@ function ExperimentList({ experiments }: { experiments: Experiment[] }) {
         <span className="text-base font-medium text-muted-foreground">
           Create new experiment
         </span>
-      </div>
+      </button>
 
       {experiments.map((exp, i) => (
         <ExperimentRow
@@ -195,6 +212,7 @@ function ExperimentList({ experiments }: { experiments: Experiment[] }) {
 
 export default function DashboardContent() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <Tabs defaultValue="all">
@@ -247,9 +265,15 @@ export default function DashboardContent() {
       <div className="px-6 pb-6">
         <TabsContent value="all">
           {viewMode === "grid" ? (
-            <ExperimentGrid experiments={MOCK_EXPERIMENTS} />
+            <ExperimentGrid
+              experiments={MOCK_EXPERIMENTS}
+              onCreate={() => setCreateOpen(true)}
+            />
           ) : (
-            <ExperimentList experiments={MOCK_EXPERIMENTS} />
+            <ExperimentList
+              experiments={MOCK_EXPERIMENTS}
+              onCreate={() => setCreateOpen(true)}
+            />
           )}
         </TabsContent>
 
@@ -259,6 +283,8 @@ export default function DashboardContent() {
           </div>
         </TabsContent>
       </div>
+
+      <NewExperimentDialog open={createOpen} onOpenChange={setCreateOpen} />
     </Tabs>
   );
 }
