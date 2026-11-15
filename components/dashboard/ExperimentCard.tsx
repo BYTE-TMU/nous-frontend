@@ -17,6 +17,7 @@ export interface Experiment {
   currentTurn: number;
   totalTurns: number;
   status: ExperimentStatusEnum;
+  cost: string;
 }
 
 export default function ExperimentCard({
@@ -28,7 +29,7 @@ export default function ExperimentCard({
     <div className="flex flex-col rounded-2xl border-2 border-border bg-card p-5">
       <div className="flex items-center justify-between mb-3">
         <Button variant="outline" size="sm" className="rounded-full">
-          cost
+          {experiment.cost}
         </Button>
         <ExperimentStatus status={experiment.status} />
       </div>

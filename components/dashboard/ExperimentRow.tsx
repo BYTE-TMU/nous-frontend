@@ -42,7 +42,7 @@ export default function ExperimentRow({
       </p>
 
       <Button variant="outline" size="sm" className="rounded-full">
-        cost
+        {experiment.cost}
       </Button>
 
       <span className="text-sm">{experiment.date}</span>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Search01Icon from "@hugeicons/core-free-icons/Search01Icon";
 import DashboardSquare01Icon from "@hugeicons/core-free-icons/DashboardSquare01Icon";
@@ -14,7 +15,9 @@ import {
   TabsContent,
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/Button";
-import { ExperimentStatusEnum } from "@/components/experiment/ExperimentStatus";
+import { ApiError, listRuns } from "@/lib/api";
+import { clearToken, getToken } from "@/lib/auth";
+import { toExperiment } from "./toExperiment";
 import ExperimentCard, { type Experiment } from "./ExperimentCard";
 import ExperimentRow from "./ExperimentRow";
 import CreateExperimentCard from "./CreateExperimentCard";
@@ -22,129 +25,19 @@ import { NewExperimentDialog } from "@/components/new-experiment/NewExperimentDi
 
 type ViewMode = "grid" | "list";
 
-const MOCK_EXPERIMENTS: Experiment[] = [
-  {
-    id: "1",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 4,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.IN_PROGRESS,
-  },
-  {
-    id: "2",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 8,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.BROKE,
-  },
-  {
-    id: "3",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 10,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.INCONCLUSIVE,
-  },
-  {
-    id: "4",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 8,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.BROKE,
-  },
-  {
-    id: "5",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 10,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.INCONCLUSIVE,
-  },
-  {
-    id: "6",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 4,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.IN_PROGRESS,
-  },
-  {
-    id: "7",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 8,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.BROKE,
-  },
-  {
-    id: "8",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 10,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.INCONCLUSIVE,
-  },
-  {
-    id: "9",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 4,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.IN_PROGRESS,
-  },
-  {
-    id: "10",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 4,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.IN_PROGRESS,
-  },
-  {
-    id: "11",
-    name: "Experiment name",
-    attacker: "Attacker X",
-    defender: "Defender X",
-    description: "Lorem ipsum dolor sit amet consectetur.",
-    date: "10/11/2026",
-    currentTurn: 8,
-    totalTurns: 10,
-    status: ExperimentStatusEnum.BROKE,
-  },
-];
+type Load =
+  | { state: "loading" }
+  | { state: "signed-out" }
+  | { state: "error"; message: string }
+  | { state: "ready"; experiments: Experiment[] };
+
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
+      {children}
+    </div>
+  );
+}
 
 function ExperimentGrid({
   experiments,
@@ -213,6 +106,37 @@ function ExperimentList({
 export default function DashboardContent() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [createOpen, setCreateOpen] = useState(false);
+  const [load, setLoad] = useState<Load>({ state: "loading" });
+
+  const fetchRuns = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setLoad({ state: "signed-out" });
+      return;
+    }
+    setLoad({ state: "loading" });
+    try {
+      const runs = await listRuns(token);
+      setLoad({ state: "ready", experiments: runs.map(toExperiment) });
+    } catch (failure) {
+      if (failure instanceof ApiError && failure.status === 401) {
+        clearToken();
+        setLoad({ state: "signed-out" });
+        return;
+      }
+      setLoad({
+        state: "error",
+        message:
+          failure instanceof ApiError && failure.status === 0
+            ? "Can't reach the server."
+            : "Couldn't load your experiments.",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchRuns();
+  }, [fetchRuns]);
 
   return (
     <Tabs defaultValue="all">
@@ -264,17 +188,35 @@ export default function DashboardContent() {
 
       <div className="px-6 pb-6">
         <TabsContent value="all">
-          {viewMode === "grid" ? (
-            <ExperimentGrid
-              experiments={MOCK_EXPERIMENTS}
-              onCreate={() => setCreateOpen(true)}
-            />
-          ) : (
-            <ExperimentList
-              experiments={MOCK_EXPERIMENTS}
-              onCreate={() => setCreateOpen(true)}
-            />
+          {load.state === "loading" && <Notice>Loading experiments…</Notice>}
+          {load.state === "signed-out" && (
+            <Notice>
+              <p>Log in to see your experiments.</p>
+              <Button asChild>
+                <Link href="/login">Log in</Link>
+              </Button>
+            </Notice>
           )}
+          {load.state === "error" && (
+            <Notice>
+              <p>{load.message}</p>
+              <Button variant="outline" onClick={() => void fetchRuns()}>
+                Try again
+              </Button>
+            </Notice>
+          )}
+          {load.state === "ready" &&
+            (viewMode === "grid" ? (
+              <ExperimentGrid
+                experiments={load.experiments}
+                onCreate={() => setCreateOpen(true)}
+              />
+            ) : (
+              <ExperimentList
+                experiments={load.experiments}
+                onCreate={() => setCreateOpen(true)}
+              />
+            ))}
         </TabsContent>
 
         <TabsContent value="compare">

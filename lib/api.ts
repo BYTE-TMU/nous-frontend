@@ -1,9 +1,8 @@
 // The ONLY place backend is called from.
-// Request and response types come from lib/api-schema.d.ts, generated from the
-// backend's own OpenAPI document (`npm run generate:api`). That document is the
-// source of truth for the API contract; never hand-edit the generated file.
-// Note: contracts/openapi.yaml in nous-backend is stale and is NOT that document.
-import type { components } from "./api-schema";
+// Request and response types come from lib/types.ts, generated from the backend's
+// OpenAPI document (`npm run generate:types`). That document is the source of truth
+// for the API contract; never hand-edit the generated file.
+import type { components } from "./types";
 
 type Schemas = components["schemas"];
 
@@ -119,4 +118,12 @@ export function rejectWaitlistRequest(
 /** Creates a run. The backend answers 201 with the new run, or 401 without a valid token. */
 export function createRun(body: RunCreateRequest, token: string | null): Promise<RunOut> {
   return request<RunOut>("/runs", { method: "POST", body: JSON.stringify(body) }, token);
+}
+
+export type RunListItem = Schemas["RunListItem"];
+
+/** The signed-in user's runs. Needs a token: the backend answers 401 without one. */
+export async function listRuns(token: string | null): Promise<RunListItem[]> {
+  const response = await request<Schemas["RunListResponse"]>("/runs", { method: "GET" }, token);
+  return response.items;
 }

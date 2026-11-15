@@ -14,7 +14,7 @@ This document says what the frontend builds and in what order. It carries no dat
 |---|---|
 | `nous-frontend` repo, Next.js 15, App Router, TypeScript strict, CI | Do not create a repo. |
 | App shell and brand tokens in Tailwind | Deep forest green and gold. |
-| `lib/api.ts`, `lib/auth.ts`, `lib/types.ts` | `api-schema.d.ts` is generated from the backend's `/openapi.json` (`npm run generate:api`); `types.ts` holds hand-written view types for shapes the backend does not serve yet. |
+| `lib/api.ts`, `lib/auth.ts`, `lib/types.ts` | Currently stubs; `types.ts` is generated from the backend spec. |
 | UI primitives in `components/ui/` | Button, Card, EmptyState. |
 
 **Legacy, delete as replacements land:** `app/upload`, `app/fingerprint`, `app/entries`, `app/account`, `components/insight`, `components/graph`, `components/upload`. They belong to the previous product and nothing new should import from them.
@@ -33,12 +33,11 @@ This document says what the frontend builds and in what order. It carries no dat
 
 **Exit:** an approved researcher can log in and reach the experiment list; an unapproved one sees why they cannot.
 
-### 2. Types for backend responses
+### 2. Type generation enforced in CI
 
-- Generate `lib/api-schema.d.ts` with `npm run generate:api` and use it for every shape the backend already serves.
-- Hand-write `lib/types.ts` from `BACKEND-ENDPOINTS.md` only for what the schema lacks: `Turn`, `Message`, `Assessment`, results, and the SSE events. Delete each as the endpoint lands in the schema.
+- Make CI regenerate `lib/types.ts` and fail on a diff, before real routes exist.
 
-**Exit:** every shape the backend serves comes from the generated schema; the remaining hand-written types match the documented responses.
+**Exit:** a backend contract change that is not reflected in the frontend fails CI.
 
 ### 3. Experiment list
 
