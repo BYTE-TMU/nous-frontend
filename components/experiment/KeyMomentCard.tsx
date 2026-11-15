@@ -1,5 +1,5 @@
 import AssessmentLabel from "@/components/transcript/AssessmentLabel";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent } from "../ui/Card";
 import type { KeyMoment } from "./deriveKeyMoments";
 
 type Props = {

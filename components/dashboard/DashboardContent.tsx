@@ -13,7 +13,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { ExperimentStatusEnum } from "@/components/experiment/ExperimentStatus";
 import ExperimentCard, { type Experiment } from "./ExperimentCard";
 import ExperimentRow from "./ExperimentRow";

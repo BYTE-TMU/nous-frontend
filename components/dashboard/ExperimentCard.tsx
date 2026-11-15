@@ -5,7 +5,7 @@ import ArrowRight02Icon from "@hugeicons/core-free-icons/ArrowRight02Icon";
 import ExperimentStatus, {
   ExperimentStatusEnum,
 } from "@/components/experiment/ExperimentStatus";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 
 export interface Experiment {
   id: string;

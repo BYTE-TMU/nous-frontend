@@ -1,6 +1,6 @@
 import { countCompletedTurns } from "@/components/transcript/turns";
 import type { Turn } from "@/components/transcript/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/Card";
 import { ExperimentStatusEnum } from "./ExperimentStatus";
 import KeyMoments from "./KeyMoments";
 import { deriveKeyMoments } from "./deriveKeyMoments";

@@ -9,7 +9,7 @@ import {
   resetPassword,
   verifyResetCode,
 } from "../../lib/auth";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { AuthCard } from "./AuthCard";
 
