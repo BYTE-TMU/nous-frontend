@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The transcript view: the product's core screen. Turn-organised display of one experiment's conversation, with thought process and judge commentary. Built against placeholder data (`placeholder-data.ts`) until the experiment read endpoint exists.
+The transcript view: the product's core screen. Turn-organised display of one experiment's conversation, with thought process and judge commentary.
 
 ## What belongs here
 

@@ -7,16 +7,23 @@ import ExperimentMetadata from "./ChatMetadata";
 import { ExperimentStatusEnum } from "./ExperimentStatus";
 import Link from "next/link";
 
-export default function ChatHeader() {
+type Props = {
+  name: string;
+  status: ExperimentStatusEnum;
+  attacker: string;
+  defender: string;
+};
+
+export default function ChatHeader({ name, status, attacker, defender }: Props) {
   return (
     <div className="flex flex-row items-center justify-between w-full gap-4 border-b p-4">
-        <Link href="/dashboard">
+        <Link href="/">
           <Button variant="default" size="lg">
             <HugeiconsIcon icon={ArrowLeft01Icon} size="lg" data-icon="inline-start" />
             Experiments
           </Button> 
         </Link>
-        <ExperimentMetadata status={ExperimentStatusEnum.IN_PROGRESS} attacker="Attacker" defender="Defender" />
+        <ExperimentMetadata name={name} status={status} attacker={attacker} defender={defender} />
         <div className="flex flex-row gap-2">
           <Button variant="secondary" size="lg">
             <HugeiconsIcon icon={PauseIcon} size="lg" data-icon="inline-start" />

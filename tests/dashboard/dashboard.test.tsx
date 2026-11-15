@@ -80,6 +80,10 @@ describe("DashboardContent", () => {
     expect(await screen.findByText("Refund test")).toBeInTheDocument();
     expect(screen.getByText("Second run")).toBeInTheDocument();
     expect(listRuns).toHaveBeenCalledWith("tok");
+    expect(screen.getByRole("link", { name: "Open Refund test" })).toHaveAttribute(
+      "href",
+      "/experiment/r1",
+    );
     expect(screen.getByText("Create new experiment")).toBeInTheDocument();
   });
 

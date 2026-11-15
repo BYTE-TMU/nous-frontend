@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import ArrowRight02Icon from "@hugeicons/core-free-icons/ArrowRight02Icon";
 import ExperimentStatus, {
@@ -26,7 +27,11 @@ export default function ExperimentCard({
   experiment: Experiment;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border-2 border-border bg-card p-5">
+    <Link
+      href={`/experiment/${experiment.id}`}
+      aria-label={`Open ${experiment.name}`}
+      className="flex flex-col rounded-2xl border-2 border-border bg-card p-5 transition-colors hover:bg-muted"
+    >
       <div className="flex items-center justify-between mb-3">
         <Button variant="outline" size="sm" className="rounded-full">
           {experiment.cost}
@@ -60,6 +65,6 @@ export default function ExperimentCard({
           turn {experiment.currentTurn} / {experiment.totalTurns}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }

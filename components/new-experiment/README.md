@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The "Create New Experiment" dialog, the only place a run gets created. Two steps: prompts, then models and cost. Create calls `POST /runs` and goes to `/experiment?run=<id>`.
+The "Create New Experiment" dialog, the only place a run gets created. Two steps: prompts, then models and cost. Create calls `POST /runs` and goes to `/experiment/<id>`.
 
 ## Key files
 
@@ -43,7 +43,7 @@ Set up the backend and frontend as in `tests/auth/README.md`, then:
 | **Next**, then **Back** | Step 2 appears, and Back keeps what you typed |
 | On step 2, before choosing models | **Create** is disabled and the estimate shows "—" |
 | Choose both models | **Create** enables and the estimate shows a dollar amount |
-| **Create** | "Creating…", then the dialog closes and you land on `/experiment?run=<id>` |
+| **Create** | "Creating…", then the dialog closes and you land on `/experiment/<id>` |
 | Stop the backend, then **Create** | "Can't reach the server…", the dialog stays open, and a retry works |
 | Close with X, then reopen | Back on step 1 with empty fields |
 

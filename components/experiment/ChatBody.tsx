@@ -1,28 +1,24 @@
-import {
-  PLACEHOLDER_RULE,
-  PLACEHOLDER_SETUP,
-  PLACEHOLDER_TURNS,
-} from "@/components/transcript/placeholder-data";
 import ChatContent from "./ChatContent";
 import ExperimentOverview from "./ExperimentOverview";
 import ExperimentResults from "./ExperimentResults";
-import { ExperimentStatusEnum } from "./ExperimentStatus";
+import type { ExperimentView } from "./toExperimentView";
 
-// Placeholder data until the experiment read endpoints exist.
-const STATUS = ExperimentStatusEnum.IN_PROGRESS;
-
-export default function ChatBody() {
+export default function ChatBody({ view }: { view: ExperimentView }) {
   return (
     <div className="grid grid-cols-8 gap-8 p-4 w-full h-full">
-      <ChatContent />
+      <ChatContent
+        turns={view.turns}
+        attackerModel={view.attacker}
+        defenderModel={view.defender}
+      />
       <ExperimentOverview
-        rule={PLACEHOLDER_RULE}
-        status={STATUS}
-        turns={PLACEHOLDER_TURNS}
-        setup={PLACEHOLDER_SETUP}
+        rule={view.rule}
+        status={view.status}
+        turns={view.turns}
+        setup={view.setup}
       />
       <div className="col-span-8">
-        <ExperimentResults status={STATUS} />
+        <ExperimentResults status={view.status} />
       </div>
     </div>
   );

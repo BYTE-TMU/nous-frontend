@@ -125,3 +125,21 @@ export async function listRuns(token: string | null): Promise<RunListItem[]> {
   const response = await request<Schemas["RunListResponse"]>("/runs", { method: "GET" }, token);
   return response.items;
 }
+export type RunSummary = Schemas["RunSummary"];
+export type RunMessage = Schemas["MessageOut"];
+export type RunJudgements = Schemas["RunJudgementsOut"];
+
+const runPath = (runId: string) => `/runs/${encodeURIComponent(runId)}`;
+
+export function getRun(runId: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(runPath(runId), { method: "GET" }, token);
+}
+
+/** Attacker and defender messages in order; both messages of a turn share its number. */
+export function getRunTurns(runId: string, token: string | null): Promise<RunMessage[]> {
+  return request<RunMessage[]>(`${runPath(runId)}/turns`, { method: "GET" }, token);
+}
+
+export function getRunJudgements(runId: string, token: string | null): Promise<RunJudgements> {
+  return request<RunJudgements>(`${runPath(runId)}/judgements`, { method: "GET" }, token);
+}

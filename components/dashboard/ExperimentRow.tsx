@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import ArrowRight02Icon from "@hugeicons/core-free-icons/ArrowRight02Icon";
 import ExperimentStatus from "@/components/experiment/ExperimentStatus";
@@ -14,8 +15,10 @@ export default function ExperimentRow({
   isLast?: boolean;
 }) {
   return (
-    <div
-      className={`grid grid-cols-[180px_1fr_1fr_1fr_100px_140px_100px] items-center gap-4 border-x-2 border-b-2 border-border px-6 py-4 ${isLast ? "rounded-b-2xl" : ""}`}
+    <Link
+      href={`/experiment/${experiment.id}`}
+      aria-label={`Open ${experiment.name}`}
+      className={`grid grid-cols-[180px_1fr_1fr_1fr_100px_140px_100px] items-center gap-4 border-x-2 border-b-2 border-border px-6 py-4 transition-colors hover:bg-muted ${isLast ? "rounded-b-2xl" : ""}`}
     >
       <div>
         <ExperimentStatus status={experiment.status} />
@@ -50,6 +53,6 @@ export default function ExperimentRow({
       <span className="text-sm">
         {experiment.currentTurn} / {experiment.totalTurns}
       </span>
-    </div>
+    </Link>
   );
 }

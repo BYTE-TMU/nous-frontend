@@ -60,7 +60,7 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
       const run = await createRun(buildRunRequest(form), getToken());
       setSubmitting(false);
       handleOpenChange(false);
-      router.push(`/experiment?run=${run.run_id}`);
+      router.push(`/experiment/${run.run_id}`);
     } catch (failure) {
       setError(describeFailure(failure));
       setSubmitting(false);
