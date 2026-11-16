@@ -11,8 +11,9 @@ function defaultName(now: Date): string {
 }
 
 /**
- * Maps the form onto POST /runs. The backend takes the defender prompt as either a
- * preset name or custom text, never both, and takes no attacker prompt at all.
+ * Maps the form onto POST /runs. Each prompt is either a preset name or custom text.
+ * A defender preset is sent as defender_persona; an attacker preset sends nothing, so
+ * nous-ai uses its default attacker prompt with the real turn cap.
  */
 export function buildRunRequest(form: ExperimentForm, now: Date = new Date()): RunCreateRequest {
   const request: RunCreateRequest = {
@@ -21,6 +22,11 @@ export function buildRunRequest(form: ExperimentForm, now: Date = new Date()): R
     defender_model: form.defenderModel,
     max_turns: MAX_TURNS,
   };
+
+  const attacker = form.attackerPrompt;
+  if (attacker.mode === "custom" && attacker.custom.trim()) {
+    request.attacker_prompt = attacker.custom.trim();
+  }
 
   const { mode, custom, preset } = form.defenderPrompt;
   if (mode === "preset" && preset) request.defender_persona = preset;

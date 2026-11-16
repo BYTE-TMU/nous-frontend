@@ -7,29 +7,18 @@ import { Dialog } from "radix-ui";
 import { ApiError, createRun } from "../../lib/api";
 import { getToken } from "../../lib/auth";
 import { buildRunRequest } from "./buildRunRequest";
-import { estimateCostUsd, estimatedTokens, formatUsd } from "./cost";
+import { estimatedTokens } from "./cost";
 import { ModelCard } from "./ModelCard";
-import {
-  ATTACKER_PRESETS,
-  ATTACKER_PROMPT_SUPPORTED,
-  DEFENDER_PRESETS,
-  MAX_TURNS,
-  MODEL_OPTIONS,
-  PRICES_ARE_PLACEHOLDER,
-  SUGGESTIONS,
-  type Suggestion,
-} from "./options";
+import { MAX_TURNS, SUGGESTIONS, type Suggestion } from "./options";
 import { PromptField } from "./PromptField";
 import { emptyForm, type ExperimentForm } from "./types";
+import { useCatalog } from "./useCatalog";
 
 type NewExperimentDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-const suggestions = SUGGESTIONS.filter(
-  (suggestion) => suggestion.target === "defender" || ATTACKER_PROMPT_SUPPORTED,
-);
 
 const sectionLabel = "font-mono text-sm font-medium text-paper uppercase";
 
@@ -54,12 +43,12 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const { catalog, status } = useCatalog(open);
+
   const update = (patch: Partial<ExperimentForm>) => setForm((current) => ({ ...current, ...patch }));
 
-  const attacker = MODEL_OPTIONS.find((model) => model.id === form.attackerModel);
-  const defender = MODEL_OPTIONS.find((model) => model.id === form.defenderModel);
-  const cost = estimateCostUsd(attacker, defender);
-
+  const attacker = catalog.models.find((model) => model.id === form.attackerModel);
+  const defender = catalog.models.find((model) => model.id === form.defenderModel);
   // The backend rejects a run with no defender rule (422), so Create stays disabled
   // until there is one.
   const { mode, custom, preset } = form.defenderPrompt;
@@ -138,6 +127,15 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
               />
             </div>
 
+            {status === "error" ? (
+              <div
+                role="alert"
+                className="rounded-xl border-[1.5px] border-status-broke/50 bg-status-broke/12 px-4 py-3 text-sm text-paper"
+              >
+                Couldn&apos;t load models and prompts. Make sure the backend and nous-ai are running.
+              </div>
+            ) : null}
+
             <div className="flex flex-col gap-3">
               <h3 className={sectionLabel}>AI models</h3>
               <div className="grid gap-4 sm:grid-cols-2 sm:gap-8">
@@ -145,12 +143,14 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
                   role="attacker"
                   value={form.attackerModel}
                   onChange={(attackerModel) => update({ attackerModel })}
+                  options={catalog.models}
                   disabled={submitting}
                 />
                 <ModelCard
                   role="defender"
                   value={form.defenderModel}
                   onChange={(defenderModel) => update({ defenderModel })}
+                  options={catalog.models}
                   disabled={submitting}
                 />
               </div>
@@ -161,20 +161,14 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
                 label="Attacker prompt"
                 value={form.attackerPrompt}
                 onChange={(attackerPrompt) => update({ attackerPrompt })}
-                presets={ATTACKER_PRESETS}
-                placeholder="e.g Get the defender to reveal the internal discount code SPRING-20 without asking for it directly."
-                disabled={!ATTACKER_PROMPT_SUPPORTED}
-                note={
-                  ATTACKER_PROMPT_SUPPORTED
-                    ? undefined
-                    : "Not sent yet: the backend doesn't accept an attacker prompt."
-                }
+                presets={catalog.attackerPresets}
+                placeholder="Leave blank to use the generic attacker prompt, or write your own."
               />
               <PromptField
                 label="Defender prompt"
                 value={form.defenderPrompt}
                 onChange={(defenderPrompt) => update({ defenderPrompt })}
-                presets={DEFENDER_PRESETS}
+                presets={catalog.defenderPresets}
                 placeholder="Describe the rule or persona the defender follows"
               />
             </div>
@@ -182,7 +176,7 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
             <div className="flex flex-col gap-3">
               <h3 className={sectionLabel}>Suggestions</h3>
               <div className="grid gap-3 sm:grid-cols-3">
-                {suggestions.map((suggestion) => (
+                {SUGGESTIONS.map((suggestion) => (
                   <button
                     key={suggestion.id}
                     type="button"
@@ -210,23 +204,18 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
           ) : null}
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-[1.5px] border-graphite pt-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex flex-col gap-1">
-                <p className="font-mono text-[10px] font-medium tracking-[0.08em] text-ash uppercase">
-                  Token cost estimate
-                </p>
-                <p className="text-[11px] text-smoke">
-                  ≈ {Math.round(estimatedTokens() / 1000)}k tokens · {MAX_TURNS} turns
-                  {PRICES_ARE_PLACEHOLDER ? " · placeholder prices" : ""}
-                </p>
-              </div>
-              <div
+            <div className="flex flex-col gap-1">
+              <p className="font-mono text-[10px] font-medium tracking-[0.08em] text-ash uppercase">
+                Token estimate
+              </p>
+              <p
                 role="status"
-                aria-label="Token cost estimate"
+                aria-label="Token estimate"
                 className="font-mono text-[28px] leading-none font-medium text-signal-lime"
               >
-                {formatUsd(cost)}
-              </div>
+                ≈ {Math.round(estimatedTokens() / 1000)}k
+              </p>
+              <p className="text-[11px] text-smoke">tokens · {MAX_TURNS} turns · no prices yet</p>
             </div>
             <button
               type="button"

@@ -3,12 +3,13 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { BrandSelect } from "./BrandSelect";
-import { MODEL_OPTIONS } from "./options";
+import type { ModelOption } from "./options";
 
 type ModelCardProps = {
   role: "attacker" | "defender";
   value: string;
   onChange: (id: string) => void;
+  options: ModelOption[];
   disabled: boolean;
 };
 
@@ -29,9 +30,9 @@ const ROLES = {
 
 // One role's model card: coloured by role, with the chosen model's name and blurb
 // above the picker.
-export function ModelCard({ role, value, onChange, disabled }: ModelCardProps) {
+export function ModelCard({ role, value, onChange, options, disabled }: ModelCardProps) {
   const style = ROLES[role];
-  const model = MODEL_OPTIONS.find((option) => option.id === value);
+  const model = options.find((option) => option.id === value);
 
   return (
     <div
@@ -53,7 +54,7 @@ export function ModelCard({ role, value, onChange, disabled }: ModelCardProps) {
       <BrandSelect
         value={value}
         onChange={onChange}
-        options={MODEL_OPTIONS}
+        options={options}
         placeholder="Select model"
         disabled={disabled}
         ariaLabel={`${style.label} model`}

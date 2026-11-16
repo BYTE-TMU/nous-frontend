@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { buildRunRequest } from "../../components/new-experiment/buildRunRequest";
-import { estimateCostUsd, formatUsd } from "../../components/new-experiment/cost";
-import { MODEL_OPTIONS } from "../../components/new-experiment/options";
 import { emptyForm, emptyPrompt, type ExperimentForm } from "../../components/new-experiment/types";
 
 const NOW = new Date(2026, 10, 10, 9, 5);
@@ -51,34 +49,20 @@ describe("buildRunRequest", () => {
     expect(request).not.toHaveProperty("defender_persona_prompt");
   });
 
-  it("never sends an attacker prompt, which the backend does not accept", () => {
-    const request = buildRunRequest(
-      form({ attackerPrompt: { mode: "custom", custom: "Steal the secret", preset: "" } }),
+  it("sends a custom attacker prompt, trimmed, and nothing for a blank or preset one", () => {
+    const custom = buildRunRequest(
+      form({ attackerPrompt: { mode: "custom", custom: "  Steal the secret  ", preset: "" } }),
       NOW,
     );
-    expect(JSON.stringify(request)).not.toContain("Steal the secret");
-    expect(request).not.toHaveProperty("attacker_prompt");
-  });
-});
+    expect(custom.attacker_prompt).toBe("Steal the secret");
 
-describe("cost estimate", () => {
-  const [haiku, , opus] = MODEL_OPTIONS;
+    const blank = buildRunRequest(form({ attackerPrompt: { ...emptyPrompt, custom: "   " } }), NOW);
+    expect(blank).not.toHaveProperty("attacker_prompt");
 
-  it("is unknown until both models are chosen", () => {
-    expect(estimateCostUsd(undefined, haiku)).toBeNull();
-    expect(estimateCostUsd(haiku, undefined)).toBeNull();
-    expect(formatUsd(null)).toBe("—");
-  });
-
-  it("adds both models' prices over the turn cap", () => {
-    // 10 turns x 1500 tokens x ($1 + $15) per million = $0.24
-    expect(estimateCostUsd(haiku, opus)).toBeCloseTo(0.24, 5);
-  });
-
-  it("formats dollars, with a floor for tiny amounts", () => {
-    expect(formatUsd(0.24)).toBe("$0.24");
-    expect(formatUsd(12)).toBe("$12.00");
-    expect(formatUsd(0.001)).toBe("<$0.01");
-    expect(formatUsd(0)).toBe("$0.00");
+    const preset = buildRunRequest(
+      form({ attackerPrompt: { mode: "preset", custom: "left over", preset: "generic" } }),
+      NOW,
+    );
+    expect(preset).not.toHaveProperty("attacker_prompt");
   });
 });

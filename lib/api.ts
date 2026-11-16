@@ -14,6 +14,8 @@ export type RunCreateRequest = Omit<Schemas["RunCreateRequest"], "max_turns" | "
   Partial<Pick<Schemas["RunCreateRequest"], "max_turns" | "judge_type">>;
 
 export type RunOut = Schemas["RunOut"];
+export type ModelInfo = Schemas["ModelInfo"];
+export type PromptCatalog = Schemas["PromptCatalog"];
 export type RunStatus = RunOut["status"];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -116,6 +118,16 @@ export function rejectWaitlistRequest(
 /** Creates a run. The backend answers 201 with the new run, or 401 without a valid token. */
 export function createRun(body: RunCreateRequest, token: string | null): Promise<RunOut> {
   return request<RunOut>("/runs", { method: "POST", body: JSON.stringify(body) }, token);
+}
+
+/** Models nous-ai offers, via the backend. */
+export function getModels(token: string | null): Promise<ModelInfo[]> {
+  return request<ModelInfo[]>("/models", { method: "GET" }, token);
+}
+
+/** Preset defender prompts and the default attacker prompt, via the backend. */
+export function getPrompts(token: string | null): Promise<PromptCatalog> {
+  return request<PromptCatalog>("/prompts", { method: "GET" }, token);
 }
 
 export type RunListItem = Schemas["RunListItem"];

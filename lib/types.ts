@@ -451,6 +451,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Models available for attacker and defender selection (proxied from nous-ai) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The model library */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ModelInfo"][];
+                    };
+                };
+                /** @description nous-ai could not be reached */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preset prompts for the new-experiment form (proxied from nous-ai) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Named defender prompts and the default attacker prompt */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PromptCatalog"];
+                    };
+                };
+                /** @description nous-ai could not be reached */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs": {
         parameters: {
             query?: never;
@@ -1068,6 +1154,8 @@ export interface components {
             description?: string | null;
             attacker_model: string;
             defender_model: string;
+            /** @description Custom attacker prompt text. Omit or leave blank to use the default attacker prompt (the "generic" preset from GET /prompts). */
+            attacker_prompt?: string | null;
             /** @description Persona name from nous-ai GET /prompts, e.g. maya-2. Omit for none. */
             defender_persona?: string | null;
             /** @description Custom defender prompt text. Wins over defender_persona. */
@@ -1079,6 +1167,32 @@ export interface components {
              * @enum {string}
              */
             judge_type: "human" | "llm";
+        };
+        ModelInfo: {
+            /** @description OpenRouter model ID; send as attacker_model or defender_model. */
+            id: string;
+            provider: string;
+            family: string;
+            /** @description "small" or "large" within its family pair. */
+            size: string;
+        };
+        DefenderPromptInfo: {
+            /** @description Send as defender_persona, e.g. nora-2. */
+            name: string;
+            persona: string | null;
+            level: number | null;
+            version: string;
+            summary: string;
+        };
+        AttackerPromptInfo: {
+            name: string;
+            summary: string;
+            /** @description Exact text the preset resolves to, for display. Omit attacker_prompt on POST /runs to use it. */
+            prompt: string;
+        };
+        PromptCatalog: {
+            defenders: components["schemas"]["DefenderPromptInfo"][];
+            attackers: components["schemas"]["AttackerPromptInfo"][];
         };
         RunOut: {
             /** Format: uuid */

@@ -81,7 +81,7 @@ export function PromptField({
       )}
 
       {value.mode === "preset" && selected ? (
-        <p className="text-xs text-smoke">{selected.summary}</p>
+        <p className="max-h-24 overflow-y-auto text-xs whitespace-pre-wrap text-smoke">{selected.summary}</p>
       ) : null}
       {note ? <p className="text-xs text-smoke">{note}</p> : null}
     </div>
