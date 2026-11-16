@@ -52,11 +52,11 @@ const noJudgements: RunJudgements = { run_id: "r1", broke: false, break_turn_num
 const judged = (score: number): RunJudgements => ({
   run_id: "r1",
   broke: score === 2,
-  break_turn_number: score === 2 ? 1 : null,
+  break_turn_number: score === 2 ? 2 : null,
   judgements: [
     {
       turn_id: "x",
-      turn_number: 1,
+      turn_number: 2,
       status: "completed",
       score,
       explanation: "It gave in.",
@@ -71,9 +71,13 @@ const judged = (score: number): RunJudgements => ({
 });
 
 describe("toTurns", () => {
-  it("pairs attacker and defender messages by turn number", () => {
+  it("pairs per-message backend numbers into displayed turns", () => {
     const turns = toTurns(
-      [message(1, "attacker", "Hi"), message(1, "defender", "Hello"), message(2, "attacker", "Again")],
+      [
+        message(1, "attacker", "Hi"),
+        message(2, "defender", "Hello"),
+        message(3, "attacker", "Again"),
+      ],
       noJudgements,
     );
     expect(turns).toHaveLength(2);
@@ -83,7 +87,10 @@ describe("toTurns", () => {
   });
 
   it("flags softened (1) and broke (2) replies, and leaves held (0) alone", () => {
-    const messages = [message(1, "attacker", "Hi"), message(1, "defender", "the code is 1234")];
+    const messages = [
+      message(1, "attacker", "Hi"),
+      message(2, "defender", "the code is 1234"),
+    ];
     expect(toTurns(messages, judged(2))[0]?.defender?.assessment).toEqual({
       classification: "broke",
       explanation: "It gave in.",
