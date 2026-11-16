@@ -46,21 +46,29 @@ function toAssessment(judgements: RunJudgements, turnNumber: number): Assessment
 export function toTurns(messages: RunMessage[], judgements: RunJudgements): Turn[] {
   const byNumber = new Map<number, Turn>();
   for (const message of messages) {
-    const turn = byNumber.get(message.turn_number) ?? {
-      number: message.turn_number,
-      attacker: { id: `t${message.turn_number}-a`, status: "pending" as const },
+    // The backend numbers each /turn message; the transcript displays each
+    // attacker/defender pair as one turn (1+2 => 1, 3+4 => 2, etc.).
+    const displayTurnNumber = Math.ceil(message.turn_number / 2);
+    const turn = byNumber.get(displayTurnNumber) ?? {
+      number: displayTurnNumber,
+      attacker: { id: `t${displayTurnNumber}-a`, status: "pending" as const },
     };
     if (message.speaker === "attacker") {
-      turn.attacker = { id: `t${message.turn_number}-a`, status: "complete", text: message.text };
-    } else {
-      turn.defender = {
-        id: `t${message.turn_number}-d`,
+      turn.attacker = {
+        id: `t${displayTurnNumber}-a`,
         status: "complete",
         text: message.text,
+      };
+    } else {
+      turn.defender = {
+        id: `t${displayTurnNumber}-d`,
+        status: "complete",
+        text: message.text,
+        // Judgements still use the backend's message turn number.
         assessment: toAssessment(judgements, message.turn_number),
       };
     }
-    byNumber.set(message.turn_number, turn);
+    byNumber.set(displayTurnNumber, turn);
   }
   return [...byNumber.values()].sort((a, b) => a.number - b.number);
 }
@@ -101,6 +109,7 @@ export function toExperimentView(
     costUsd: run.cost.total_usd,
     verdict: results?.judge_verdict
       ? {
+          // The results endpoint already numbers completed attacker/defender rounds.
           turn: results.judge_verdict.cited_turn,
           explanation: results.judge_verdict.explanation,
           excerpt: results.judge_verdict.excerpt ?? "",

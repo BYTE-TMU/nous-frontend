@@ -31,7 +31,7 @@ describe("LoginForm", () => {
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Forgot your password?" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Forgot password?" })).toHaveAttribute(
       "href",
       "/reset-password",
     );
@@ -40,7 +40,7 @@ describe("LoginForm", () => {
 it("offers Google sign-in", () => {
   render(<LoginForm />);
   expect(
-    screen.getByRole("button", { name: "Continue with Google" }),
+    screen.getByRole("button", { name: "Sign in with Google" }),
   ).toBeInTheDocument();
 });
 
@@ -65,7 +65,11 @@ it("offers Google sign-in", () => {
     login.mockRejectedValue(new ApiError(401, "nope"));
     render(<LoginForm />);
     await fillAndSubmit("me@nous.dev", "wrong-password");
-    expect(await screen.findByRole("heading", { name: "Incorrect login." })).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That email and password don’t match. Try again or reset your password.",
+    );
+    expect(screen.getByRole("heading", { name: "Welcome back." })).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true");
     expect(push).not.toHaveBeenCalled();
     // Recoverable: the form is usable again and a retry can succeed.
     login.mockResolvedValue(undefined);
