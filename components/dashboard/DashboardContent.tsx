@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Search01Icon from "@hugeicons/core-free-icons/Search01Icon";
@@ -104,6 +104,7 @@ function ExperimentList({
 }
 
 export default function DashboardContent() {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [createOpen, setCreateOpen] = useState(false);
   const [load, setLoad] = useState<Load>({ state: "loading" });
@@ -137,6 +138,15 @@ export default function DashboardContent() {
   useEffect(() => {
     void fetchRuns();
   }, [fetchRuns]);
+
+  // No token, or the backend said 401: this page has nothing to show a signed-out
+  // visitor, so send them to log in instead.
+  const signedOut = load.state === "signed-out";
+  useEffect(() => {
+    if (signedOut) router.replace("/login");
+  }, [signedOut, router]);
+
+  if (signedOut) return null;
 
   return (
     <Tabs defaultValue="all">
@@ -189,14 +199,6 @@ export default function DashboardContent() {
       <div className="px-6 pb-6">
         <TabsContent value="all">
           {load.state === "loading" && <Notice>Loading experiments…</Notice>}
-          {load.state === "signed-out" && (
-            <Notice>
-              <p>Log in to see your experiments.</p>
-              <Button asChild>
-                <Link href="/login">Log in</Link>
-              </Button>
-            </Notice>
-          )}
           {load.state === "error" && (
             <Notice>
               <p>{load.message}</p>

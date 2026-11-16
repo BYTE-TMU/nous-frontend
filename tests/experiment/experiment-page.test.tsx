@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ExperimentPage from "../../components/experiment/ExperimentPage";
 import { ExperimentStatusEnum } from "../../components/experiment/ExperimentStatus";
@@ -9,6 +9,9 @@ import {
   type RunMessage,
   type RunSummary,
 } from "../../lib/api";
+
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 
 const getRun = vi.fn();
 const getRunTurns = vi.fn();
@@ -169,10 +172,11 @@ describe("ExperimentPage", () => {
     expect(getRunResults).toHaveBeenCalledWith("abc", "tok");
   });
 
-  it("asks to log in when there is no token", async () => {
+  it("sends the user to /login when there is no token", async () => {
     window.localStorage.clear();
     render(<ExperimentPage runId="abc" />);
-    expect(await screen.findByText("Log in to see this experiment.")).toBeInTheDocument();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    expect(screen.queryByText(/Log in to see/)).not.toBeInTheDocument();
     expect(getRun).not.toHaveBeenCalled();
   });
 

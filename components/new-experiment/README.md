@@ -2,16 +2,17 @@
 
 ## Purpose
 
-The "Create New Experiment" dialog, the only place a run gets created. Two steps: prompts, then models and cost. Create calls `POST /runs` and goes to `/experiment/<id>`.
+The "Create New Experiment" dialog, the only place a run gets created. One screen (name, models, prompts, suggestions, cost). Create calls `POST /runs` and goes to `/experiment/<id>`.
 
 ## Key files
 
 | File | Purpose |
 |---|---|
-| `NewExperimentDialog.tsx` | the dialog: step state, form state, submit, errors |
+| `NewExperimentDialog.tsx` | the single-screen dialog: layout, form state, submit, errors |
 | `NewExperimentButton.tsx` | drop-in "+ New experiment" trigger that owns the open state |
-| `PromptStep.tsx`, `PromptField.tsx` | step 1: name, attacker and defender prompts (Custom/Preset), suggestions |
-| `ModelStep.tsx` | step 2: attacker and defender model, cost estimate, Create |
+| `PromptField.tsx` | one prompt with the Custom/Preset pill toggle |
+| `ModelCard.tsx` | attacker / defender model card (role colour, name, blurb, picker) |
+| `BrandSelect.tsx` | the branded select used by the cards and preset prompts |
 | `buildRunRequest.ts` | maps the form onto the `POST /runs` body |
 | `cost.ts` | the dollar estimate |
 | `options.ts` | models, prices, presets and suggestions |
@@ -37,15 +38,15 @@ Set up the backend and frontend as in `tests/auth/README.md`, then:
 
 | Do this | Expected |
 |---|---|
-| Open the dialog | "Step 1 of 2: prompts". The attacker prompt is disabled with a "Not sent yet" note |
+| Open the dialog | One screen: name, two model cards, two prompt boxes, suggestions, cost. The attacker prompt is disabled with a "Not sent yet" note |
 | Click a defender suggestion | The defender prompt fills with its text |
 | Switch the defender to **Preset** | A preset list replaces the text box |
-| **Next**, then **Back** | Step 2 appears, and Back keeps what you typed |
-| On step 2, before choosing models | **Create** is disabled and the estimate shows "—" |
-| Choose both models | **Create** enables and the estimate shows a dollar amount |
-| **Create** | "Creating…", then the dialog closes and you land on `/experiment/<id>` |
-| Stop the backend, then **Create** | "Can't reach the server…", the dialog stays open, and a retry works |
-| Close with X, then reopen | Back on step 1 with empty fields |
+| Before choosing models or a defender prompt | **Create experiment** is disabled and the estimate shows "—" |
+| Choose both models | The cards show each model's name and blurb, and the estimate shows a dollar amount |
+| Add a defender prompt | **Create experiment** enables |
+| **Create experiment** | "Creating…", then the dialog closes and you land on `/experiment/<id>` |
+| Stop the backend, then **Create experiment** | "Can't reach the server…", the dialog stays open, and a retry works |
+| Close with X, then reopen | Empty fields |
 
 To confirm the run exists, copy the id from the URL and the token from DevTools (Local Storage, `nous.access_token`):
 
