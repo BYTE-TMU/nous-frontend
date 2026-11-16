@@ -6,6 +6,8 @@
 export type ModelOption = {
   id: string;
   label: string;
+  /** One line under the model name on its card. Placeholder copy, like the rest. */
+  description: string;
   /** Placeholder blended price in USD per million tokens. Not real pricing. */
   usdPerMillionTokens: number;
 };
@@ -32,9 +34,24 @@ export const ATTACKER_PROMPT_SUPPORTED = false;
 export const PRICES_ARE_PLACEHOLDER = true;
 
 export const MODEL_OPTIONS: ModelOption[] = [
-  { id: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5", usdPerMillionTokens: 1 },
-  { id: "anthropic/claude-sonnet-5.5", label: "Claude Sonnet 5.5", usdPerMillionTokens: 3 },
-  { id: "anthropic/claude-opus-5.5", label: "Claude Opus 5.5", usdPerMillionTokens: 15 },
+  {
+    id: "anthropic/claude-haiku-5.5",
+    label: "Claude Haiku 5.5",
+    description: "Anthropic - fast, low cost",
+    usdPerMillionTokens: 1,
+  },
+  {
+    id: "anthropic/claude-sonnet-5.5",
+    label: "Claude Sonnet 5.5",
+    description: "Anthropic - balanced speed and quality",
+    usdPerMillionTokens: 3,
+  },
+  {
+    id: "anthropic/claude-opus-5.5",
+    label: "Claude Opus 5.5",
+    description: "Anthropic - most capable, higher cost",
+    usdPerMillionTokens: 15,
+  },
 ];
 
 export const DEFENDER_PRESETS: PresetOption[] = [

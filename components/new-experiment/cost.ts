@@ -5,6 +5,11 @@ import { MAX_TURNS, type ModelOption } from "./options";
 // exists.
 const TOKENS_PER_MESSAGE = 1500;
 
+/** Total tokens the estimate assumes for a full run (attacker + defender messages). */
+export function estimatedTokens(maxTurns: number = MAX_TURNS): number {
+  return TOKENS_PER_MESSAGE * maxTurns * 2;
+}
+
 /** One turn is an attacker message plus a defender message. */
 export function estimateCostUsd(
   attacker: ModelOption | undefined,

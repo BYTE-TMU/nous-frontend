@@ -1,15 +1,8 @@
 "use client";
 
 import { useId } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { Tabs } from "radix-ui";
+import { BrandSelect } from "./BrandSelect";
 import type { PresetOption } from "./options";
 import type { PromptChoice, PromptMode } from "./types";
 
@@ -23,8 +16,11 @@ type PromptFieldProps = {
   note?: string;
 };
 
-// One prompt with a Custom/Preset toggle. Which one is chosen changes only the
-// prompt; the models are picked separately on the next step.
+const toggleItem =
+  "cursor-pointer rounded-full px-3 py-1 text-xs font-medium text-ash outline-none transition-colors focus-visible:ring-2 focus-visible:ring-signal-lime/60 disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-[linear-gradient(157deg,var(--color-signal-lime)_0%,var(--color-impact-green)_100%)] data-[state=active]:text-night";
+
+// One prompt with a Custom/Preset pill toggle. Which one is chosen changes only the
+// prompt; the models are picked in the cards above.
 export function PromptField({
   label,
   value,
@@ -41,56 +37,53 @@ export function PromptField({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={fieldId} className="font-medium">
+        <label htmlFor={fieldId} className="font-mono text-sm font-medium text-paper uppercase">
           {label}
         </label>
-        <Tabs
+        <Tabs.Root
           value={value.mode}
           onValueChange={(mode) => onChange({ ...value, mode: mode as PromptMode })}
         >
-          <TabsList aria-label={`${label} source`}>
-            <TabsTrigger value="custom" disabled={disabled}>
+          <Tabs.List
+            aria-label={`${label} source`}
+            className="flex items-start gap-0.5 rounded-full border-[1.5px] border-graphite bg-ink p-0.5"
+          >
+            <Tabs.Trigger value="custom" disabled={disabled} className={toggleItem}>
               Custom
-            </TabsTrigger>
-            <TabsTrigger value="preset" disabled={disabled}>
+            </Tabs.Trigger>
+            <Tabs.Trigger value="preset" disabled={disabled} className={toggleItem}>
               Preset
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Tabs.Root>
       </div>
 
       {value.mode === "custom" ? (
-        <Textarea
+        <textarea
           id={fieldId}
-          rows={5}
           placeholder={placeholder}
           value={value.custom}
           disabled={disabled}
           onChange={(event) => onChange({ ...value, custom: event.target.value })}
+          className="h-[72px] w-full resize-none rounded-[14px] border-[1.5px] border-graphite bg-ink px-4 py-3 text-[13px] text-white outline-none transition-colors placeholder:text-smoke focus:border-signal-lime disabled:cursor-not-allowed disabled:opacity-60"
         />
       ) : (
-        <>
-          <Select
-            value={value.preset || undefined}
+        <div className="flex h-[72px] items-center rounded-[14px] border-[1.5px] border-graphite bg-ink p-4">
+          <BrandSelect
+            id={fieldId}
+            value={value.preset}
+            onChange={(preset) => onChange({ ...value, preset })}
+            options={presets}
+            placeholder="Select a preset"
             disabled={disabled}
-            onValueChange={(preset) => onChange({ ...value, preset })}
-          >
-            <SelectTrigger id={fieldId} className="w-full">
-              <SelectValue placeholder="Select a preset" />
-            </SelectTrigger>
-            <SelectContent>
-              {presets.map((preset) => (
-                <SelectItem key={preset.id} value={preset.id}>
-                  {preset.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selected ? <p className="text-xs text-muted-foreground">{selected.summary}</p> : null}
-        </>
+          />
+        </div>
       )}
 
-      {note ? <p className="text-xs text-muted-foreground">{note}</p> : null}
+      {value.mode === "preset" && selected ? (
+        <p className="text-xs text-smoke">{selected.summary}</p>
+      ) : null}
+      {note ? <p className="text-xs text-smoke">{note}</p> : null}
     </div>
   );
 }
