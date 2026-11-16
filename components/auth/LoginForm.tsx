@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -6,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ApiError, startGoogleLogin } from "../../lib/api";
 import { login } from "../../lib/auth";
-import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/TextField";
+import { AuthBanner } from "./AuthBanner";
+import { AuthButton } from "./AuthButton";
 import { AuthCard } from "./AuthCard";
+import { AuthField } from "./AuthField";
 
 const AFTER_LOGIN_PATH = "/";
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
@@ -60,72 +60,61 @@ export function LoginForm() {
   }
 
   return (
-    <AuthCard heading={rejected ? "Incorrect login." : "Welcome back."}>
-      <div className="flex flex-col gap-5">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={startGoogleLogin}
-          className="w-full"
-        >
-          Continue with Google
-        </Button>
+    <AuthCard heading="Welcome back." subtitle="Sign in to run and review experiments.">
+      <AuthButton variant="secondary" onClick={startGoogleLogin}>
+        Sign in with Google
+      </AuthButton>
 
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-sm text-muted-foreground">
-            or continue with email
-          </span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <form
-          noValidate
-          onSubmit={handleSubmit}
-          className="flex flex-col items-center gap-4"
-        >
-          <TextField
-            label="Email"
-            type="email"
-            name="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            error={fieldErrors.email}
-            disabled={submitting}
-          />
-
-          <TextField
-            label="Password"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            error={fieldErrors.password}
-            disabled={submitting}
-          />
-
-          {notice ? (
-            <p role="alert" className="text-center text-sm">
-              {notice}
-            </p>
-          ) : null}
-
-          <Button
-            type="submit"
-            disabled={submitting}
-            aria-busy={submitting}
-            className="mt-2"
-          >
-            {submitting ? "Logging in..." : "Log in"}
-          </Button>
-        </form>
-
-        <Link href="/reset-password" className="text-center underline">
-          Forgot your password?
-        </Link>
+      <div className="flex items-center gap-4" role="separator">
+        <div className="h-px flex-1 bg-graphite" />
+        <span className="text-base text-smoke">or</span>
+        <div className="h-px flex-1 bg-graphite" />
       </div>
+
+      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-7">
+        {rejected ? (
+          <AuthBanner>
+            That email and password don’t match. Try again or reset your password.
+          </AuthBanner>
+        ) : null}
+        {notice ? <AuthBanner>{notice}</AuthBanner> : null}
+
+        <AuthField
+          label="Email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={fieldErrors.email}
+          invalid={rejected}
+          disabled={submitting}
+        />
+
+        <AuthField
+          label="Password"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={fieldErrors.password}
+          invalid={rejected}
+          disabled={submitting}
+          labelAction={
+            <Link
+              href="/reset-password"
+              className="text-[17px] font-medium text-signal-lime underline underline-offset-2 hover:text-impact-green"
+            >
+              Forgot password?
+            </Link>
+          }
+        />
+
+        <AuthButton type="submit" disabled={submitting} aria-busy={submitting}>
+          {submitting ? "Logging in..." : "Log in"}
+        </AuthButton>
+      </form>
     </AuthCard>
   );
 }

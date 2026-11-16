@@ -1,25 +1,30 @@
 import type { ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { NousLogo } from "./NousLogo";
 
 type AuthCardProps = {
   heading: string;
+  subtitle?: string;
+  // Optional strip between the logo and heading (the password-reset step marker).
+  eyebrow?: ReactNode;
   children: ReactNode;
 };
 
-// The shell every login and password-reset screen shares: logo, heading, body.
-// CardTitle renders a div, so the heading role is explicit. It is a polite live
-// region because the login screen swaps it to "Incorrect login." on failure.
-export function AuthCard({ heading, children }: AuthCardProps) {
+// The shell every login and password-reset screen shares: logo, heading,
+// subtitle, body. Matches the Figma auth card (640px, 32px radius, Ink fill).
+export function AuthCard({ heading, subtitle, eyebrow, children }: AuthCardProps) {
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="justify-items-center gap-4 text-center">
+    <section className="flex w-full max-w-[640px] flex-col gap-7 overflow-hidden rounded-[32px] border-[1.5px] border-graphite bg-ink px-6 pt-12 pb-[52px] shadow-[0_40px_120px_rgba(0,0,0,0.55)] sm:px-14">
+      <header className="flex flex-col items-center gap-5 pt-3 text-center">
         <NousLogo />
-        <CardTitle role="heading" aria-level={1} aria-live="polite" className="text-2xl">
+        {eyebrow}
+        <h1 className="text-[32px] leading-[1.15] font-semibold text-white sm:text-[40px]">
           {heading}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+        </h1>
+        {subtitle ? (
+          <p className="text-lg leading-[1.4] text-smoke">{subtitle}</p>
+        ) : null}
+      </header>
+      {children}
+    </section>
   );
 }

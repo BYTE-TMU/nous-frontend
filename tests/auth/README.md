@@ -66,8 +66,8 @@ Use a normal domain. The backend rejects `.local`, `.test` and `localhost`.
 | Do this | Expected |
 |---|---|
 | Submit with empty fields | Inline errors, no request sent |
-| Valid email + wrong password | Heading becomes "Incorrect login." |
-| Email with no account | Same "Incorrect login." |
+| Valid email + wrong password | Red banner "That email and password don’t match…" and red field borders |
+| Email with no account | Same banner |
 | `tester@nous.dev` + the right password | Redirect to `/`. DevTools → Local Storage has `nous.access_token`. |
 | Stop the backend, then log in | "Can't reach the server…" and the heading stays "Welcome back." |
 
