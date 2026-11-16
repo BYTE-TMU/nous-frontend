@@ -27,59 +27,88 @@ export const isLive = (state: RunSummary["state"]) => !FINISHED.includes(state);
 const shortModel = (model: string) => model.split("/").pop() ?? model;
 
 /**
- * Judge scores are 0 held, 1 softened, 2 broke. Only 1 and 2 are worth flagging in the
- * transcript; the judge's first quote is the excerpt.
+ * Judge scores follow the rubric in nous-ai (eval/judgement_rubric.md): 0 held, 1 softened,
+ * 2 broke. Only 1 and 2 are worth flagging in the transcript; the judge's first quote is
+ * the excerpt. `messageNumber` is the defender message's own `turn_number`: that is the
+ * row the judge scores.
  */
-function toAssessment(judgements: RunJudgements, turnNumber: number): Assessment | undefined {
+function toAssessment(judgements: RunJudgements, messageNumber: number): Assessment | undefined {
   const result = judgements.judgements.find(
-    (j) => j.turn_number === turnNumber && j.status === "completed",
+    (j) => j.turn_number === messageNumber && j.status === "completed",
   );
   if (!result || (result.score !== 1 && result.score !== 2)) return undefined;
   return {
-    classification: result.score === 2 ? "broke" : "near_miss",
+    classification: result.score === 2 ? "broke" : "softened",
     explanation: result.explanation ?? "",
     excerpt: result.evidence?.[0] ?? "",
   };
 }
 
-/** Groups the flat message list into turns; a turn without a defender reply is still running. */
-export function toTurns(messages: RunMessage[], judgements: RunJudgements): Turn[] {
-  const byNumber = new Map<number, Turn>();
-  for (const message of messages) {
-    // The backend numbers each /turn message; the transcript displays each
-    // attacker/defender pair as one turn (1+2 => 1, 3+4 => 2, etc.).
-    const displayTurnNumber = Math.ceil(message.turn_number / 2);
-    const turn = byNumber.get(displayTurnNumber) ?? {
-      number: displayTurnNumber,
-      attacker: { id: `t${displayTurnNumber}-a`, status: "pending" as const },
-    };
+/**
+ * Groups the flat message list into rounds ("turns" in the UI: one attacker message plus the
+ * defender's reply).
+ *
+ * The backend's `turn_number` counts messages, not rounds: attacker 1, defender 2, attacker 3,
+ * defender 4... So a round is an attacker message and the defender message that follows it,
+ * and its number is its position, not either message's `turn_number`.
+ *
+ * Only finished messages come back, so while the run is generating (`state === "running"`)
+ * the next message is inferred: the defender's reply if the last round has none, otherwise
+ * the attacker's next message.
+ */
+export function toTurns(
+  messages: RunMessage[],
+  judgements: RunJudgements,
+  generating?: { maxTurns: number },
+): Turn[] {
+  const turns: Turn[] = [];
+  let open: Turn | undefined;
+  for (const message of [...messages].sort((a, b) => a.turn_number - b.turn_number)) {
     if (message.speaker === "attacker") {
-      turn.attacker = {
-        id: `t${displayTurnNumber}-a`,
-        status: "complete",
-        text: message.text,
+      open = {
+        number: turns.length + 1,
+        attacker: { id: `t${turns.length + 1}-a`, status: "complete", text: message.text },
       };
-    } else {
-      turn.defender = {
-        id: `t${displayTurnNumber}-d`,
-        status: "complete",
-        text: message.text,
-        // Judgements still use the backend's message turn number.
-        assessment: toAssessment(judgements, message.turn_number),
-      };
+      turns.push(open);
+      continue;
     }
-    byNumber.set(displayTurnNumber, turn);
+    if (!open) {
+      open = {
+        number: turns.length + 1,
+        attacker: { id: `t${turns.length + 1}-a`, status: "pending" },
+      };
+      turns.push(open);
+    }
+    open.defender = {
+      id: `t${open.number}-d`,
+      status: "complete",
+      text: message.text,
+      assessment: toAssessment(judgements, message.turn_number),
+    };
+    open = undefined;
   }
-  return [...byNumber.values()].sort((a, b) => a.number - b.number);
+
+  const last = turns.at(-1);
+  if (generating) {
+    if (last && last.attacker.status === "complete" && !last.defender) {
+      last.defender = { id: `t${last.number}-d`, status: "pending" };
+    } else if (turns.length < generating.maxTurns && (!last || last.defender)) {
+      const number = turns.length + 1;
+      turns.push({ number, attacker: { id: `t${number}-a`, status: "pending" } });
+    }
+  }
+  return turns;
 }
 
 /**
- * A judged break is BROKE. Otherwise a run that is still going is IN PROGRESS, and one
- * that has ended is INCONCLUSIVE (it held, was stopped, or failed).
+ * The backend's outcomes are `broke` and `held`. A judged break is BROKE. A run that is still
+ * going is IN PROGRESS, and a completed one without a break (it held, or was stopped) is HELD.
+ * A failed run has no outcome, so it is INCONCLUSIVE.
  */
 export function toViewStatus(run: RunSummary, judgements: RunJudgements): ExperimentStatusEnum {
   if (judgements.broke) return ExperimentStatusEnum.BROKE;
-  return isLive(run.state) ? ExperimentStatusEnum.IN_PROGRESS : ExperimentStatusEnum.INCONCLUSIVE;
+  if (isLive(run.state)) return ExperimentStatusEnum.IN_PROGRESS;
+  return run.state === "completed" ? ExperimentStatusEnum.HELD : ExperimentStatusEnum.INCONCLUSIVE;
 }
 
 export function toExperimentView(
@@ -97,9 +126,14 @@ export function toExperimentView(
     defender,
     rule,
     status: toViewStatus(run, judgements),
-    turns: toTurns(messages, judgements),
+    turns: toTurns(
+      messages,
+      judgements,
+      run.state === "running" ? { maxTurns: run.max_turns } : undefined,
+    ),
     setup: {
       defenderPersona: run.defender_persona ?? (rule ? "Custom prompt" : "—"),
+      rule: rule || "—",
       attackStrategy: run.attacker_prompt ?? "Chosen when the run starts",
       attackerModel: attacker,
       defenderModel: defender,

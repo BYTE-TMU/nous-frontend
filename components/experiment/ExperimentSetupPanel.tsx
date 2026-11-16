@@ -7,6 +7,7 @@ type Props = {
 
 const FIELDS: { label: string; key: keyof ExperimentSetup }[] = [
   { label: "Defender persona", key: "defenderPersona" },
+  { label: "Rule", key: "rule" },
   { label: "Attack strategy", key: "attackStrategy" },
   { label: "Attacker model", key: "attackerModel" },
   { label: "Defender model", key: "defenderModel" },
@@ -15,18 +16,18 @@ const FIELDS: { label: string; key: keyof ExperimentSetup }[] = [
 /** Read-only: the setup is fixed once the conversation starts. */
 export default function ExperimentSetupPanel({ setup }: Props) {
   return (
-    <Card>
+    <Card className="rounded-[13px] border-[1.5px] border-signal-lime ring-0 [--card-spacing:--spacing(7)]">
       <CardHeader>
-        <CardDescription>Locked when the conversation started.</CardDescription>
+        <CardDescription className="text-sm text-foreground">Locked when the conversation started.</CardDescription>
       </CardHeader>
       <CardContent>
-        <dl className="flex flex-col gap-4 border-t pt-4">
+        <dl className="flex flex-col gap-4 border-t border-dashed border-signal-lime pt-5">
           {FIELDS.map(({ label, key }) => (
             <div key={key} className="flex flex-col gap-0.5">
-              <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <dt className="text-[13px] font-semibold text-foreground uppercase">
                 {label}
               </dt>
-              <dd className="text-sm">{setup[key]}</dd>
+              <dd className="text-sm whitespace-pre-wrap break-words">{setup[key]}</dd>
             </div>
           ))}
         </dl>

@@ -8,6 +8,9 @@ import { Badge } from "../ui/badge";
 export enum ExperimentStatusEnum {
   IN_PROGRESS,
   BROKE,
+  /** The backend outcome `held`: the run completed without a break. */
+  HELD,
+  /** A run with no outcome (it failed). */
   INCONCLUSIVE,
 }
 
@@ -40,6 +43,14 @@ const STATUS_CONFIG = {
     border: "border-destructive",
     bg: "bg-destructive/10",
     iconFill: "fill-destructive",
+  },
+  [ExperimentStatusEnum.HELD]: {
+    label: "HELD",
+    icon: CircleIcon,
+    text: "text-impact-green",
+    border: "border-impact-green",
+    bg: "bg-impact-green/25",
+    iconFill: "fill-impact-green",
   },
   [ExperimentStatusEnum.INCONCLUSIVE]: {
     label: "INCONCLUSIVE",

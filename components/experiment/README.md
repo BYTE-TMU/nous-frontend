@@ -21,5 +21,7 @@ Experiment page pieces: status, the Summary and Setup tabs (`ExperimentOverview`
 
 ## Summary and Setup tabs
 
-- **Summary:** the rule under test, a status line, and **key moments**: the turns the judge flagged, each with the defender's quote and the judge's explanation. They are derived from the turns' `assessment`, not stored separately (`deriveKeyMoments.ts`).
-- **Setup:** read-only ("Locked when the conversation started"): defender persona, attack strategy, and both models. The rule lives on the Summary tab.
+- **Rule under test:** pinned above the first turn (`RuleBanner`), clamped to two lines. The backend has no separate rule field, so this is the defender's prompt.
+- **Summary:** "Turn N running" with a status line, and **key moments**: the turns the judge flagged, each with the defender's quote and the judge's explanation. They are derived from the turns' `assessment`, not stored separately (`deriveKeyMoments.ts`).
+- **Setup:** read-only ("Locked when the conversation started"): defender persona, rule, attack strategy, and both models.
+- **Typing state:** the backend returns only finished messages, so while a run is `running` the next message is inferred and shown as a typing bubble (`toTurns`).

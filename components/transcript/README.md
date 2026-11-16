@@ -28,8 +28,8 @@ The transcript view: the product's core screen. Turn-organised display of one ex
 |---|---|
 | `Transcript.tsx` | header and the list of turns |
 | `TurnView.tsx` | one turn: a `TurnMarker`, then the attacker message and the defender reply |
-| `TranscriptMessageView.tsx` | one message: avatar, role and model, bubble, near-miss footer, reasoning |
-| `ReasoningTrace.tsx` | the model's thought process as a collapsible trace; also the pending ("thinking") state |
+| `TranscriptMessageView.tsx` | one message: avatar, role and model, bubble, judge footer, typing state |
+| `RuleBanner.tsx` | the rule under test, pinned above the first turn |
 | `TurnMarker.tsx` | the divider between turns |
 | `types.ts` | local view types; move to generated `lib/types.ts` once the API exists |
 
