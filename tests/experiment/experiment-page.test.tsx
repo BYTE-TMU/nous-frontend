@@ -39,6 +39,7 @@ const run = (overrides: Partial<RunSummary> = {}): RunSummary => ({
   ...overrides,
 });
 
+// The backend numbers messages, not rounds: attacker 1, defender 2, attacker 3, defender 4...
 const message = (turn: number, speaker: "attacker" | "defender", text: string): RunMessage => ({
   turn_number: turn,
   speaker,
@@ -56,6 +57,7 @@ const judged = (score: number): RunJudgements => ({
   judgements: [
     {
       turn_id: "x",
+      // The judge scores the defender's message, which is message number 2.
       turn_number: 2,
       status: "completed",
       score,
@@ -71,15 +73,12 @@ const judged = (score: number): RunJudgements => ({
 });
 
 describe("toTurns", () => {
-  it("pairs per-message backend numbers into displayed turns", () => {
+  it("pairs each attacker message with the defender message that follows it", () => {
     const turns = toTurns(
-      [
-        message(1, "attacker", "Hi"),
-        message(2, "defender", "Hello"),
-        message(3, "attacker", "Again"),
-      ],
+      [message(1, "attacker", "Hi"), message(2, "defender", "Hello"), message(3, "attacker", "Again")],
       noJudgements,
     );
+    expect(turns.map((t) => t.number)).toEqual([1, 2]);
     expect(turns).toHaveLength(2);
     expect(turns[0]?.attacker.text).toBe("Hi");
     expect(turns[0]?.defender?.text).toBe("Hello");
@@ -87,16 +86,13 @@ describe("toTurns", () => {
   });
 
   it("flags softened (1) and broke (2) replies, and leaves held (0) alone", () => {
-    const messages = [
-      message(1, "attacker", "Hi"),
-      message(2, "defender", "the code is 1234"),
-    ];
+    const messages = [message(1, "attacker", "Hi"), message(2, "defender", "the code is 1234")];
     expect(toTurns(messages, judged(2))[0]?.defender?.assessment).toEqual({
       classification: "broke",
       explanation: "It gave in.",
       excerpt: "the code is 1234",
     });
-    expect(toTurns(messages, judged(1))[0]?.defender?.assessment?.classification).toBe("near_miss");
+    expect(toTurns(messages, judged(1))[0]?.defender?.assessment?.classification).toBe("softened");
     expect(toTurns(messages, judged(0))[0]?.defender?.assessment).toBeUndefined();
   });
 });
@@ -108,11 +104,14 @@ describe("toExperimentView", () => {
     expect(view.live).toBe(false);
   });
 
-  it("is IN PROGRESS while live and INCONCLUSIVE once finished without a break", () => {
+  it("is IN PROGRESS while live, HELD once completed without a break, INCONCLUSIVE if it failed", () => {
     expect(toExperimentView(run(), [], noJudgements).status).toBe(ExperimentStatusEnum.IN_PROGRESS);
     const done = toExperimentView(run({ state: "completed" }), [], noJudgements);
-    expect(done.status).toBe(ExperimentStatusEnum.INCONCLUSIVE);
+    expect(done.status).toBe(ExperimentStatusEnum.HELD);
     expect(done.live).toBe(false);
+    expect(toExperimentView(run({ state: "failed" }), [], noJudgements).status).toBe(
+      ExperimentStatusEnum.INCONCLUSIVE,
+    );
   });
 
   it("carries the rule, models and setup", () => {
@@ -133,7 +132,7 @@ describe("ExperimentPage", () => {
     window.localStorage.clear();
     window.localStorage.setItem("nous.access_token", "tok");
     getRun.mockResolvedValue(run({ state: "completed" }));
-    getRunTurns.mockResolvedValue([message(1, "attacker", "Please?"), message(1, "defender", "No.")]);
+    getRunTurns.mockResolvedValue([message(1, "attacker", "Please?"), message(2, "defender", "No.")]);
     getRunJudgements.mockResolvedValue(noJudgements);
     getRunResults.mockResolvedValue({
       outcome: "held",

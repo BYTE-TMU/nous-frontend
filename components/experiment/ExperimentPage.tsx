@@ -14,6 +14,7 @@ import { clearToken, getToken } from "@/lib/auth";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
 import RunControls from "./RunControls";
+import ViewResultButton from "./ViewResultButton";
 import { toExperimentView, type ExperimentView } from "./toExperimentView";
 
 const POLL_MS = 3000;
@@ -134,7 +135,13 @@ export default function ExperimentPage({ runId }: { runId: string }) {
         status={view.status}
         attacker={view.attacker}
         defender={view.defender}
-        controls={<RunControls runId={runId} state={view.state} onChanged={refresh} />}
+        controls={
+          view.live ? (
+            <RunControls runId={runId} state={view.state} onChanged={refresh} />
+          ) : (
+            <ViewResultButton />
+          )
+        }
       />
       <ChatBody view={view} />
     </main>

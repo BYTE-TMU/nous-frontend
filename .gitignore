@@ -18,3 +18,8 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.log
 coverage/
+
+# e2e
+e2e/.results/
+e2e/screenshots/
+test-results/

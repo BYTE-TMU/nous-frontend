@@ -12,9 +12,9 @@ type Props = {
 /** A turn marker followed by the attacker's message and the defender's reply. */
 export default function TurnView({ turn, attackerModel, defenderModel }: Props) {
   return (
-    <section aria-label={`Turn ${turn.number}`} className="flex flex-col gap-6">
+    <section aria-label={`Turn ${turn.number}`} className="flex flex-col gap-8">
       <TurnMarker number={turn.number} />
-      <MessageGroup className="gap-6">
+      <MessageGroup className="gap-3">
         <TranscriptMessageView role="attacker" model={attackerModel} message={turn.attacker}
           turnNumber={turn.number}
         />

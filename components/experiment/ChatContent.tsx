@@ -5,12 +5,18 @@ type Props = {
   turns: Turn[];
   attackerModel: string;
   defenderModel: string;
+  rule?: string;
 };
 
-export default function ChatContent({ turns, attackerModel, defenderModel }: Props) {
+export default function ChatContent({ turns, attackerModel, defenderModel, rule }: Props) {
   return (
     <div className="col-span-6">
-      <Transcript turns={turns} attackerModel={attackerModel} defenderModel={defenderModel} />
+      <Transcript
+        turns={turns}
+        attackerModel={attackerModel}
+        defenderModel={defenderModel}
+        rule={rule}
+      />
     </div>
   );
 }

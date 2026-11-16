@@ -10,12 +10,13 @@ export default function ChatBody({ view }: { view: ExperimentView }) {
         turns={view.turns}
         attackerModel={view.attacker}
         defenderModel={view.defender}
+        rule={view.rule}
       />
       <ExperimentOverview
-        rule={view.rule}
         status={view.status}
         turns={view.turns}
         setup={view.setup}
+        state={view.state}
       />
       <div className="col-span-8">
         <ExperimentResults

@@ -20,6 +20,10 @@ type Props = {
 
 type Action = "pause" | "resume" | "stop";
 
+/** Dark pill with a lime outline; fills neon green on hover (Figma stop control). */
+const ICON_BUTTON =
+  "size-10 rounded-full border-signal-lime bg-carbon text-signal-lime hover:bg-signal-lime hover:text-night";
+
 const CALLS = { pause: pauseRun, resume: resumeRun, stop: stopRun } as const;
 
 /** What the backend will accept in each state (see POST /runs/{id}/pause|resume|stop). */
@@ -68,19 +72,28 @@ export default function RunControls({ runId, state, onChanged }: Props) {
     <div className="flex flex-col items-end gap-1">
       <div className="flex flex-row gap-2">
         {can.resume ? (
-          <Button variant="secondary" size="lg" disabled={busy !== null} onClick={() => void run("resume")}>
-            <HugeiconsIcon icon={PlayIcon} size="lg" data-icon="inline-start" />
-            {busy === "resume" ? "Resuming…" : "Resume"}
+          <Button
+            variant="outline"
+            size="icon-lg"
+            className={ICON_BUTTON}
+            aria-label={busy === "resume" ? "Resuming…" : "Resume"}
+            title="Resume"
+            disabled={busy !== null}
+            onClick={() => void run("resume")}
+          >
+            <HugeiconsIcon icon={PlayIcon} size="lg" className="fill-current" />
           </Button>
         ) : (
           <Button
-            variant="secondary"
-            size="lg"
+            variant="outline"
+            size="icon-lg"
+            className={ICON_BUTTON}
+            aria-label={state === "pausing" || busy === "pause" ? "Pausing…" : "Pause"}
+            title="Pause"
             disabled={!can.pause || busy !== null}
             onClick={() => void run("pause")}
           >
-            <HugeiconsIcon icon={PauseIcon} size="lg" data-icon="inline-start" />
-            {state === "pausing" || busy === "pause" ? "Pausing…" : "Pause"}
+            <HugeiconsIcon icon={PauseIcon} size="lg" className="fill-current" />
           </Button>
         )}
 
@@ -95,12 +108,15 @@ export default function RunControls({ runId, state, onChanged }: Props) {
           </>
         ) : (
           <Button
-            size="lg"
+            variant="outline"
+            size="icon-lg"
+            className={ICON_BUTTON}
+            aria-label={state === "stopping" || busy === "stop" ? "Stopping…" : "Stop"}
+            title="Stop"
             disabled={!can.stop || busy !== null}
             onClick={() => setConfirmStop(true)}
           >
-            <HugeiconsIcon icon={StopIcon} size="lg" data-icon="inline-start" />
-            {state === "stopping" || busy === "stop" ? "Stopping…" : "Stop"}
+            <HugeiconsIcon icon={StopIcon} size="lg" className="fill-current" />
           </Button>
         )}
       </div>

@@ -8,12 +8,10 @@ export type TranscriptMessage = {
   status: MessageStatus;
   /** Absent while the message is pending. */
   text?: string;
-  /** The model's own account of how it got here. Absent when the model gave none. */
-  reasoning?: string;
 };
 
-/** The judge's view of a turn, when it flagged something. Turns with nothing to flag have none. */
-export type AssessmentClassification = "near_miss" | "broke";
+/** The judge's view of a turn (rubric scores 1 and 2), when it flagged something. Turns with nothing to flag have none. */
+export type AssessmentClassification = "softened" | "broke";
 
 export type Assessment = {
   classification: AssessmentClassification;
