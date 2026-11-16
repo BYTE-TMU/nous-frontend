@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardContent from "../../components/dashboard/DashboardContent";
@@ -6,7 +6,8 @@ import { toExperiment, toStatus } from "../../components/dashboard/toExperiment"
 import { ExperimentStatusEnum } from "../../components/experiment/ExperimentStatus";
 import { ApiError, type RunListItem } from "../../lib/api";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace }) }));
 
 const listRuns = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
@@ -67,9 +68,10 @@ describe("DashboardContent", () => {
     window.localStorage.clear();
   });
 
-  it("asks the user to log in, without calling the backend, when there is no token", async () => {
+  it("sends the user to /login, without calling the backend, when there is no token", async () => {
     render(<DashboardContent />);
-    expect(await screen.findByText("Log in to see your experiments.")).toBeInTheDocument();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    expect(screen.queryByText(/Log in to see/)).not.toBeInTheDocument();
     expect(listRuns).not.toHaveBeenCalled();
   });
 
@@ -94,11 +96,11 @@ describe("DashboardContent", () => {
     expect(await screen.findByText("Create new experiment")).toBeInTheDocument();
   });
 
-  it("clears an expired token and asks to log in again on a 401", async () => {
+  it("clears an expired token and sends the user to /login on a 401", async () => {
     window.localStorage.setItem("nous.access_token", "stale");
     listRuns.mockRejectedValue(new ApiError(401, "no"));
     render(<DashboardContent />);
-    expect(await screen.findByText("Log in to see your experiments.")).toBeInTheDocument();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
     expect(window.localStorage.getItem("nous.access_token")).toBeNull();
   });
 

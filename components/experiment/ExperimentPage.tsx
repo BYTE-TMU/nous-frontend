@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -35,6 +36,7 @@ function Notice({ children }: { children: React.ReactNode }) {
 
 /** One experiment, loaded from the backend and refreshed while the run is still going. */
 export default function ExperimentPage({ runId }: { runId: string }) {
+  const router = useRouter();
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -94,17 +96,15 @@ export default function ExperimentPage({ runId }: { runId: string }) {
     return () => clearTimeout(timer.current);
   }, [fetchRun]);
 
+  // No token, or the backend said 401: send the visitor to log in instead of
+  // showing a signed-out page.
+  const signedOut = load.state === "signed-out";
+  useEffect(() => {
+    if (signedOut) router.replace("/login");
+  }, [signedOut, router]);
+
+  if (signedOut) return null;
   if (load.state === "loading") return <Notice>Loading experiment…</Notice>;
-  if (load.state === "signed-out") {
-    return (
-      <Notice>
-        <p>Log in to see this experiment.</p>
-        <Button asChild>
-          <Link href="/login">Log in</Link>
-        </Button>
-      </Notice>
-    );
-  }
   if (load.state === "not-found") {
     return (
       <Notice>
