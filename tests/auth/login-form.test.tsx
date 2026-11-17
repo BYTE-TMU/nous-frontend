@@ -49,7 +49,7 @@ it("offers Google sign-in", () => {
     render(<LoginForm />);
     await fillAndSubmit("  me@nous.dev ", "hunter2hunter2");
     expect(login).toHaveBeenCalledWith("me@nous.dev", "hunter2hunter2");
-    expect(push).toHaveBeenCalledWith("/");
+    expect(push).toHaveBeenCalledWith("/dashboard");
   });
 
   it("rejects bad input with field errors and does not call the backend", async () => {
@@ -74,7 +74,7 @@ it("offers Google sign-in", () => {
     // Recoverable: the form is usable again and a retry can succeed.
     login.mockResolvedValue(undefined);
     await userEvent.setup().click(screen.getByRole("button", { name: "Log in" }));
-    expect(push).toHaveBeenCalledWith("/");
+    expect(push).toHaveBeenCalledWith("/dashboard");
   });
 
   it("points at the email field when the backend rejects the address format", async () => {

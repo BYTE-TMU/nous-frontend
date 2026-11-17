@@ -10,14 +10,14 @@ describe("HideOnAuthRoutes", () => {
     vi.clearAllMocks();
   });
 
-  it.each(["/login", "/reset-password"])("hides the header on %s", (path) => {
+  it.each(["/", "/login", "/reset-password"])("hides the header on %s", (path) => {
     usePathname.mockReturnValue(path);
     render(<HideOnAuthRoutes>header</HideOnAuthRoutes>);
     expect(screen.queryByText("header")).not.toBeInTheDocument();
   });
 
   it("shows the header everywhere else", () => {
-    usePathname.mockReturnValue("/");
+    usePathname.mockReturnValue("/dashboard");
     render(<HideOnAuthRoutes>header</HideOnAuthRoutes>);
     expect(screen.getByText("header")).toBeInTheDocument();
   });

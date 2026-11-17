@@ -81,7 +81,7 @@ export default function AdminWaitlistPage() {
             </p>
           </div>
 
-          <Link href="/" className="text-sm underline">
+          <Link href="/dashboard" className="text-sm underline">
             Back to dashboard
           </Link>
         </div>

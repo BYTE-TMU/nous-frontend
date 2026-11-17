@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 
 export const metadata: Metadata = {
   title: "Nous",
-  description: "Your mind, mapped.",
+  description: "An adversarial testbed for AI researchers: two models, one rule, and a judge on every turn.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
