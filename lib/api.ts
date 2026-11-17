@@ -121,8 +121,19 @@ export function createRun(body: RunCreateRequest, token: string | null): Promise
 export type RunListItem = Schemas["RunListItem"];
 
 /** The signed-in user's runs. Needs a token: the backend answers 401 without one. */
-export async function listRuns(token: string | null): Promise<RunListItem[]> {
-  const response = await request<Schemas["RunListResponse"]>("/runs", { method: "GET" }, token);
+export async function listRuns(
+  token: string | null,
+  params?: { q?: string; sort?: string },
+): Promise<RunListItem[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.q) searchParams.set("q", params.q);
+  if (params?.sort) searchParams.set("sort", params.sort);
+  const qs = searchParams.toString();
+  const response = await request<Schemas["RunListResponse"]>(
+    `/runs${qs ? `?${qs}` : ""}`,
+    { method: "GET" },
+    token,
+  );
   return response.items;
 }
 export type RunSummary = Schemas["RunSummary"];

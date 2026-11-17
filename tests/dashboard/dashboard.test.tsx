@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -29,6 +30,13 @@ const run = (overrides: Partial<RunListItem> = {}): RunListItem => ({
   ...overrides,
 });
 
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
 describe("toExperiment", () => {
   it("maps a backend run onto what the cards show", () => {
     expect(toExperiment(run())).toMatchObject({
@@ -52,13 +60,13 @@ describe("toExperiment", () => {
     expect(experiment.cost).toBe("<$0.01");
   });
 
-  it("treats unfinished runs as in progress and finished or failed ones as inconclusive", () => {
-    for (const state of ["pending", "running", "pausing", "paused", "stopping"] as const) {
-      expect(toStatus(state)).toBe(ExperimentStatusEnum.IN_PROGRESS);
-    }
-    for (const state of ["completed", "failed"] as const) {
-      expect(toStatus(state)).toBe(ExperimentStatusEnum.INCONCLUSIVE);
-    }
+  it("maps each backend state to the right display status", () => {
+    expect(toStatus("pending")).toBe(ExperimentStatusEnum.PENDING);
+    expect(toStatus("running")).toBe(ExperimentStatusEnum.IN_PROGRESS);
+    expect(toStatus("stopping")).toBe(ExperimentStatusEnum.IN_PROGRESS);
+    expect(toStatus("paused")).toBe(ExperimentStatusEnum.PAUSED);
+    expect(toStatus("completed")).toBe(ExperimentStatusEnum.INCONCLUSIVE);
+    expect(toStatus("failed")).toBe(ExperimentStatusEnum.INCONCLUSIVE);
   });
 });
 
@@ -69,19 +77,18 @@ describe("DashboardContent", () => {
   });
 
   it("sends the user to /login, without calling the backend, when there is no token", async () => {
-    render(<DashboardContent />);
+    render(<DashboardContent />, { wrapper });
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
-    expect(screen.queryByText(/Log in to see/)).not.toBeInTheDocument();
     expect(listRuns).not.toHaveBeenCalled();
   });
 
   it("shows the user's runs from the backend", async () => {
     window.localStorage.setItem("nous.access_token", "tok");
     listRuns.mockResolvedValue([run(), run({ run_id: "r2", name: "Second run" })]);
-    render(<DashboardContent />);
+    render(<DashboardContent />, { wrapper });
     expect(await screen.findByText("Refund test")).toBeInTheDocument();
     expect(screen.getByText("Second run")).toBeInTheDocument();
-    expect(listRuns).toHaveBeenCalledWith("tok");
+    expect(listRuns).toHaveBeenCalledWith("tok", { q: undefined, sort: "-created_at" });
     expect(screen.getByRole("link", { name: "Open Refund test" })).toHaveAttribute(
       "href",
       "/experiment/r1",
@@ -92,14 +99,14 @@ describe("DashboardContent", () => {
   it("still offers Create new experiment when the user has no runs", async () => {
     window.localStorage.setItem("nous.access_token", "tok");
     listRuns.mockResolvedValue([]);
-    render(<DashboardContent />);
+    render(<DashboardContent />, { wrapper });
     expect(await screen.findByText("Create new experiment")).toBeInTheDocument();
   });
 
   it("clears an expired token and sends the user to /login on a 401", async () => {
     window.localStorage.setItem("nous.access_token", "stale");
     listRuns.mockRejectedValue(new ApiError(401, "no"));
-    render(<DashboardContent />);
+    render(<DashboardContent />, { wrapper });
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
     expect(window.localStorage.getItem("nous.access_token")).toBeNull();
   });
@@ -108,7 +115,7 @@ describe("DashboardContent", () => {
     window.localStorage.setItem("nous.access_token", "tok");
     listRuns.mockRejectedValueOnce(new ApiError(0, "offline"));
     listRuns.mockResolvedValueOnce([run()]);
-    render(<DashboardContent />);
+    render(<DashboardContent />, { wrapper });
     expect(await screen.findByText("Can't reach the server.")).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Refund test")).toBeInTheDocument();

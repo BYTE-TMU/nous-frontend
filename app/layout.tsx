@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import AppHeader from "@/components/navigation/AppHeader";
 import { HideOnAuthRoutes } from "@/components/auth/HideOnAuthRoutes";
+import Providers from "./providers";
 
 // Figma Variable collection: Font/Sans = Geist, Font/Mono = Geist Mono.
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -18,10 +19,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={cn("font-sans", geist.variable, geistMono.variable)}>
       <body>
-        <HideOnAuthRoutes>
-          <AppHeader />
-        </HideOnAuthRoutes>
-        {children}
+        <Providers>
+          <HideOnAuthRoutes>
+            <AppHeader />
+          </HideOnAuthRoutes>
+          {children}
+        </Providers>
       </body>
     </html>
   );

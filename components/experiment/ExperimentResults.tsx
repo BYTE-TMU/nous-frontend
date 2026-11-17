@@ -27,6 +27,14 @@ const COPY = {
     title: "This conversation ended without a result.",
     body: "It stopped before the judge could decide.",
   },
+  [ExperimentStatusEnum.PENDING]: {
+    title: "This conversation hasn\u2019t started yet.",
+    body: "It will begin running shortly.",
+  },
+  [ExperimentStatusEnum.PAUSED]: {
+    title: "This conversation is paused.",
+    body: "Resume it to keep going, or stop it to see the results.",
+  },
 };
 
 const PAUSED = {
