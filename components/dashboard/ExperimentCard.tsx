@@ -19,6 +19,8 @@ export interface Experiment {
   totalTurns: number;
   status: ExperimentStatusEnum;
   cost: string;
+  /** Set only in the admin "all users" view. */
+  owner?: string;
 }
 
 export default function ExperimentCard({
@@ -58,6 +60,10 @@ export default function ExperimentCard({
       <p className="text-sm text-muted-foreground mb-3">
         {experiment.description}
       </p>
+
+      {experiment.owner ? (
+        <p className="text-xs text-muted-foreground mb-3">by {experiment.owner}</p>
+      ) : null}
 
       <div className="mt-auto border-t border-border pt-2 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{experiment.date}</span>

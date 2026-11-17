@@ -21,9 +21,9 @@ The "Create New Experiment" dialog, the only place a run gets created. One scree
 
 | Part | State |
 |---|---|
-| Create (`POST /runs`) | Real. Sends the name, both models, the defender prompt, `max_turns: 10` |
+| Create (`POST /runs`) | Real. Sends the name, both models, the defender prompt, `max_turns: 30` |
 | Model list, preset prompts, prices | **Placeholder** in `options.ts`. They live in `nous-ai`, which the frontend must not call, and the backend does not expose them yet |
-| Cost estimate | Computed from the placeholder prices (10 turns, ~1500 tokens a message, judge excluded). Shows a "Placeholder prices" note |
+| Cost estimate | Computed from the placeholder prices (30 turns, ~1500 tokens a message, judge excluded). Shows a "Placeholder prices" note |
 | Attacker prompt | Shown but **not sent**: `POST /runs` has no field for it. Flip `ATTACKER_PROMPT_SUPPORTED` in `options.ts` once it does |
 | Name | Optional here, required by the backend, so a blank one becomes `Experiment YYYY-MM-DD HH:MM` |
 

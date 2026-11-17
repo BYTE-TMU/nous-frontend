@@ -1,4 +1,4 @@
-import type { Assessment, Turn } from "@/components/transcript/types";
+import type { Assessment, Judgement, Turn } from "@/components/transcript/types";
 import type { RunJudgements, RunMessage, RunResults, RunSummary } from "@/lib/api";
 import { ExperimentStatusEnum } from "./ExperimentStatus";
 import type { ExperimentSetup } from "./types";
@@ -44,6 +44,16 @@ function toAssessment(judgements: RunJudgements, messageNumber: number): Assessm
   };
 }
 
+/** Every judged reply gets a judgement, including held (0) ones that the transcript doesn't flag. */
+function toJudgement(judgements: RunJudgements, messageNumber: number): Judgement | undefined {
+  const result = judgements.judgements.find((j) => j.turn_number === messageNumber);
+  if (!result) return undefined;
+  if (result.status === "completed" && result.score !== null) {
+    return { state: "scored", score: result.score, explanation: result.explanation ?? "" };
+  }
+  return { state: result.status === "failed" ? "failed" : "pending" };
+}
+
 /**
  * Groups the flat message list into rounds ("turns" in the UI: one attacker message plus the
  * defender's reply).
@@ -84,6 +94,7 @@ export function toTurns(
       status: "complete",
       text: message.text,
       assessment: toAssessment(judgements, message.turn_number),
+      judgement: toJudgement(judgements, message.turn_number),
     };
     open = undefined;
   }

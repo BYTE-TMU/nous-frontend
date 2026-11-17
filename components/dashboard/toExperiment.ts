@@ -3,15 +3,14 @@ import type { RunListItem } from "@/lib/api";
 import type { Experiment } from "./ExperimentCard";
 
 /**
- * The UI has three statuses; the backend has seven run states and no outcome in the
- * list response, so BROKE cannot be derived yet (BACKEND-ENDPOINTS.md Q1). Until it can:
- * a run that has not finished is IN PROGRESS, and a finished or failed one is
- * INCONCLUSIVE.
+ * The list response carries a `broke` flag, so a run a judge scored as a break is BROKE even if
+ * it later failed or was stopped. Otherwise: a run still going is IN PROGRESS, a completed one
+ * HELD, and a failed one INCONCLUSIVE.
  */
-export function toStatus(state: RunListItem["state"]): ExperimentStatusEnum {
-  return state === "completed" || state === "failed"
-    ? ExperimentStatusEnum.INCONCLUSIVE
-    : ExperimentStatusEnum.IN_PROGRESS;
+export function toStatus(run: Pick<RunListItem, "state" | "broke">): ExperimentStatusEnum {
+  if (run.broke) return ExperimentStatusEnum.BROKE;
+  if (run.state === "completed") return ExperimentStatusEnum.HELD;
+  return run.state === "failed" ? ExperimentStatusEnum.INCONCLUSIVE : ExperimentStatusEnum.IN_PROGRESS;
 }
 
 /** "anthropic/claude-haiku-5.5" -> "claude-haiku-5.5" */
@@ -33,7 +32,8 @@ export function toExperiment(run: RunListItem): Experiment {
     }),
     currentTurn: run.turns_completed,
     totalTurns: run.max_turns,
-    status: toStatus(run.state),
+    status: toStatus(run),
     cost: formatCost(run.cost.total_usd),
+    owner: run.owner_email ?? undefined,
   };
 }

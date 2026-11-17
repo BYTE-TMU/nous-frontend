@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ExperimentPage from "../../components/experiment/ExperimentPage";
 import { ExperimentStatusEnum } from "../../components/experiment/ExperimentStatus";
@@ -17,8 +18,12 @@ const getRun = vi.fn();
 const getRunTurns = vi.fn();
 const getRunJudgements = vi.fn();
 const getRunResults = vi.fn();
+const getMe = vi.fn();
+const renameRun = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/api")>()),
+  getMe: (...args: unknown[]) => getMe(...args),
+  renameRun: (...args: unknown[]) => renameRun(...args),
   getRun: (...args: unknown[]) => getRun(...args),
   getRunTurns: (...args: unknown[]) => getRunTurns(...args),
   getRunJudgements: (...args: unknown[]) => getRunJudgements(...args),
@@ -98,6 +103,16 @@ describe("toTurns", () => {
     expect(toTurns(messages, judged(1))[0]?.defender?.assessment?.classification).toBe("softened");
     expect(toTurns(messages, judged(0))[0]?.defender?.assessment).toBeUndefined();
   });
+
+  it("still reports the score for a held (0) reply", () => {
+    const messages = [message(1, "attacker", "Hi"), message(2, "defender", "No.")];
+    expect(toTurns(messages, judged(0))[0]?.defender?.judgement).toEqual({
+      state: "scored",
+      score: 0,
+      explanation: "It gave in.",
+    });
+    expect(toTurns(messages, noJudgements)[0]?.defender?.judgement).toBeUndefined();
+  });
 });
 
 describe("toExperimentView", () => {
@@ -137,6 +152,7 @@ describe("ExperimentPage", () => {
     getRun.mockResolvedValue(run({ state: "completed" }));
     getRunTurns.mockResolvedValue([message(1, "attacker", "Please?"), message(2, "defender", "No.")]);
     getRunJudgements.mockResolvedValue(noJudgements);
+    getMe.mockResolvedValue({ id: "u", email: "a@b.c", is_admin: false });
     getRunResults.mockResolvedValue({
       outcome: "held",
       break_turn: null,
@@ -147,6 +163,35 @@ describe("ExperimentPage", () => {
     });
   });
   afterEach(() => vi.useRealTimers());
+
+  it("renders the model's Markdown instead of showing raw asterisks", async () => {
+    getRunTurns.mockResolvedValue([
+      message(1, "attacker", "Hi"),
+      message(2, "defender", "**Sure** thing:\n\n- one\n- two"),
+    ]);
+    render(<ExperimentPage runId="abc" />);
+    expect(await screen.findByText("Sure")).toBeInTheDocument();
+    expect(screen.getByText("Sure").tagName).toBe("STRONG");
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("lets an admin rename the run, and hides the button from everyone else", async () => {
+    const { unmount } = render(<ExperimentPage runId="abc" />);
+    await screen.findByText("Please?");
+    expect(screen.queryByRole("button", { name: "Rename" })).not.toBeInTheDocument();
+    unmount();
+
+    getMe.mockResolvedValue({ id: "u", email: "a@b.c", is_admin: true });
+    renameRun.mockResolvedValue(run({ name: "Better name" }));
+    render(<ExperimentPage runId="abc" />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Rename" }));
+    const input = screen.getByRole("textbox", { name: "Experiment name" });
+    await user.clear(input);
+    await user.type(input, "Better name");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(renameRun).toHaveBeenCalledWith("abc", "Better name", "tok");
+  });
 
   it("loads the run named in the URL and shows its transcript", async () => {
     render(<ExperimentPage runId="abc" />);

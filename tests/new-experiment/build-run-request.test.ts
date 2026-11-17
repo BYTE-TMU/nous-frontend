@@ -16,7 +16,7 @@ describe("buildRunRequest", () => {
       name: "My run",
       attacker_model: "attacker/model",
       defender_model: "defender/model",
-      max_turns: 10,
+      max_turns: 30,
     });
   });
 

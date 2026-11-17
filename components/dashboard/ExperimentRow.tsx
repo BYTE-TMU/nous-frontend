@@ -41,6 +41,7 @@ export default function ExperimentRow({
       </div>
 
       <p className="text-sm text-muted-foreground truncate">
+        {experiment.owner ? `${experiment.owner} · ` : ""}
         {experiment.description}
       </p>
 

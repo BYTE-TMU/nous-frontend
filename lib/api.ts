@@ -132,10 +132,21 @@ export function getPrompts(token: string | null): Promise<PromptCatalog> {
 
 export type RunListItem = Schemas["RunListItem"];
 
-/** The signed-in user's runs. Needs a token: the backend answers 401 without one. */
-export async function listRuns(token: string | null): Promise<RunListItem[]> {
-  const response = await request<Schemas["RunListResponse"]>("/runs", { method: "GET" }, token);
+/** The signed-in user's runs. Needs a token: the backend answers 401 without one.
+ *  `all` is admin-only (403 otherwise) and lists every user's runs. */
+export async function listRuns(
+  token: string | null,
+  options?: { all?: boolean },
+): Promise<RunListItem[]> {
+  const path = options?.all ? "/runs?all=true" : "/runs";
+  const response = await request<Schemas["RunListResponse"]>(path, { method: "GET" }, token);
   return response.items;
+}
+
+export type CurrentUser = Schemas["UserResponse"];
+
+export function getMe(token: string | null): Promise<CurrentUser> {
+  return request<CurrentUser>("/auth/me", { method: "GET" }, token);
 }
 export type RunSummary = Schemas["RunSummary"];
 export type RunMessage = Schemas["MessageOut"];
@@ -174,4 +185,9 @@ export function resumeRun(runId: string, token: string | null): Promise<RunSumma
 
 export function stopRun(runId: string, token: string | null): Promise<RunSummary> {
   return request<RunSummary>(`${runPath(runId)}/stop`, { method: "POST" }, token);
+}
+
+/** Admin-only (403 otherwise). */
+export function renameRun(runId: string, name: string, token: string | null): Promise<RunSummary> {
+  return request<RunSummary>(runPath(runId), { method: "PATCH", body: JSON.stringify({ name }) }, token);
 }

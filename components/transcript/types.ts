@@ -23,7 +23,13 @@ export type Assessment = {
 
 export type DefenderMessage = TranscriptMessage & {
   assessment?: Assessment;
+  /** The judge's result for this reply, whatever the score (held included). */
+  judgement?: Judgement;
 };
+
+export type Judgement =
+  | { state: "scored"; score: number; explanation: string }
+  | { state: "pending" | "failed" };
 
 /** One turn: an attacker message and the defender's reply. */
 export type Turn = {

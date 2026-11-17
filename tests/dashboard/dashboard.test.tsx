@@ -10,9 +10,11 @@ const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace }) }));
 
 const listRuns = vi.fn();
+const getMe = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/api")>()),
   listRuns: (...args: unknown[]) => listRuns(...args),
+  getMe: (...args: unknown[]) => getMe(...args),
 }));
 
 const run = (overrides: Partial<RunListItem> = {}): RunListItem => ({
@@ -52,12 +54,14 @@ describe("toExperiment", () => {
     expect(experiment.cost).toBe("<$0.01");
   });
 
-  it("treats unfinished runs as in progress and finished or failed ones as inconclusive", () => {
+  it("shows BROKE whenever a judge scored a break, HELD when completed, INCONCLUSIVE only when failed", () => {
     for (const state of ["pending", "running", "pausing", "paused", "stopping"] as const) {
-      expect(toStatus(state)).toBe(ExperimentStatusEnum.IN_PROGRESS);
+      expect(toStatus({ state, broke: false })).toBe(ExperimentStatusEnum.IN_PROGRESS);
     }
-    for (const state of ["completed", "failed"] as const) {
-      expect(toStatus(state)).toBe(ExperimentStatusEnum.INCONCLUSIVE);
+    expect(toStatus({ state: "completed", broke: false })).toBe(ExperimentStatusEnum.HELD);
+    expect(toStatus({ state: "failed", broke: false })).toBe(ExperimentStatusEnum.INCONCLUSIVE);
+    for (const state of ["running", "completed", "failed", "paused"] as const) {
+      expect(toStatus({ state, broke: true })).toBe(ExperimentStatusEnum.BROKE);
     }
   });
 });
@@ -66,6 +70,29 @@ describe("DashboardContent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
+    getMe.mockResolvedValue({ id: "u1", email: "u@example.com", is_admin: false });
+  });
+
+  it("offers an All users view only to admins, and shows each run's owner", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    getMe.mockResolvedValue({ id: "u1", email: "a@example.com", is_admin: true });
+    listRuns.mockResolvedValueOnce([run()]);
+    listRuns.mockResolvedValueOnce([run({ owner_email: "other@example.com" })]);
+    render(<DashboardContent />);
+    expect(await screen.findByText("Refund test")).toBeInTheDocument();
+    expect(screen.queryByText(/by other@example.com/)).not.toBeInTheDocument();
+
+    await userEvent.setup().click(await screen.findByRole("button", { name: "All users" }));
+    expect(await screen.findByText("by other@example.com")).toBeInTheDocument();
+    expect(listRuns).toHaveBeenLastCalledWith("tok", { all: true });
+  });
+
+  it("hides the All users toggle from non-admins", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    listRuns.mockResolvedValue([run()]);
+    render(<DashboardContent />);
+    expect(await screen.findByText("Refund test")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "All users" })).not.toBeInTheDocument();
   });
 
   it("sends the user to /login, without calling the backend, when there is no token", async () => {

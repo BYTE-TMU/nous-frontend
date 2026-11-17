@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   ApiError,
+  getMe,
   getRun,
   getRunJudgements,
   getRunResults,
@@ -15,6 +16,7 @@ import { clearToken, getToken } from "@/lib/auth";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
 import RunControls from "./RunControls";
+import RenameRun from "./RenameRun";
 import ViewResultButton from "./ViewResultButton";
 import { toExperimentView, type ExperimentView } from "./toExperimentView";
 
@@ -40,6 +42,15 @@ export default function ExperimentPage({ runId }: { runId: string }) {
   const router = useRouter();
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [admin, setAdmin] = useState(false);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    getMe(token)
+      .then((me) => setAdmin(me.is_admin === true))
+      .catch(() => setAdmin(false));
+  }, []);
 
   const fetchRun = useCallback(
     async (initial: boolean) => {
@@ -136,11 +147,14 @@ export default function ExperimentPage({ runId }: { runId: string }) {
         attacker={view.attacker}
         defender={view.defender}
         controls={
-          view.live ? (
-            <RunControls runId={runId} state={view.state} onChanged={refresh} />
-          ) : (
-            <ViewResultButton />
-          )
+          <div className="flex items-center gap-2">
+            {admin ? <RenameRun runId={runId} name={view.name} onRenamed={refresh} /> : null}
+            {view.live ? (
+              <RunControls runId={runId} state={view.state} onChanged={refresh} />
+            ) : (
+              <ViewResultButton />
+            )}
+          </div>
         }
       />
       <ChatBody view={view} />

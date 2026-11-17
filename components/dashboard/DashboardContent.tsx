@@ -15,7 +15,7 @@ import {
   TabsContent,
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/Button";
-import { ApiError, listRuns } from "@/lib/api";
+import { ApiError, getMe, listRuns } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
 import { toExperiment } from "./toExperiment";
 import ExperimentCard, { type Experiment } from "./ExperimentCard";
@@ -108,6 +108,17 @@ export default function DashboardContent() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [createOpen, setCreateOpen] = useState(false);
   const [load, setLoad] = useState<Load>({ state: "loading" });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [allUsers, setAllUsers] = useState(false);
+
+  // Only decides whether to offer the "All users" toggle; the backend enforces access.
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    getMe(token)
+      .then((me) => setIsAdmin(me.is_admin))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   const fetchRuns = useCallback(async () => {
     const token = getToken();
@@ -117,7 +128,7 @@ export default function DashboardContent() {
     }
     setLoad({ state: "loading" });
     try {
-      const runs = await listRuns(token);
+      const runs = await (allUsers ? listRuns(token, { all: true }) : listRuns(token));
       setLoad({ state: "ready", experiments: runs.map(toExperiment) });
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 401) {
@@ -133,7 +144,7 @@ export default function DashboardContent() {
             : "Couldn't load your experiments.",
       });
     }
-  }, []);
+  }, [allUsers]);
 
   useEffect(() => {
     void fetchRuns();
@@ -167,6 +178,16 @@ export default function DashboardContent() {
         </TabsList>
 
         <div className="flex items-center gap-2">
+          {isAdmin ? (
+            <Button
+              variant={allUsers ? "default" : "outline"}
+              className="rounded-full"
+              aria-pressed={allUsers}
+              onClick={() => setAllUsers((current) => !current)}
+            >
+              All users
+            </Button>
+          ) : null}
           <Button variant="ghost" size="icon">
             <HugeiconsIcon icon={Search01Icon} size={20} />
           </Button>

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/message";
 import { cn } from "@/lib/utils";
 import AssessmentLabel from "./AssessmentLabel";
+import MessageMarkdown from "./MessageMarkdown";
 import type { DefenderMessage, TranscriptMessage, TranscriptRole } from "./types";
 
 // Role colours are brand tokens (Attacker = Fox Red, Defender = Blue Freeze).
@@ -67,6 +68,7 @@ export default function TranscriptMessageView({ role, model, message, turnNumber
   const { label, initial, align, avatar, border } = ROLE[role];
   const pending = message.status === "pending";
   const assessment = "assessment" in message ? message.assessment : undefined;
+  const judgement = "judgement" in message ? message.judgement : undefined;
 
   return (
     <Message align={align} className="gap-5">
@@ -99,24 +101,50 @@ export default function TranscriptMessageView({ role, model, message, turnNumber
                 align === "start" ? "rounded-tl-[4px]" : "rounded-tr-[4px]",
               )}
             >
-              {message.text}
+              <MessageMarkdown>{message.text ?? ""}</MessageMarkdown>
             </BubbleContent>
           </Bubble>
         )}
 
-        {assessment && (
-          <MessageFooter className="px-0 text-[13px]">
+        {assessment ? (
+          <MessageFooter className="flex-wrap items-baseline gap-y-0.5 px-0 text-[13px]">
             <AssessmentLabel classification={assessment.classification} />
             <span aria-hidden className="mx-1.5">
               •
             </span>
-            <span className="truncate">
+            <span className="shrink-0">score {judgement?.state === "scored" ? judgement.score : "?"}/2</span>
+            <span aria-hidden className="mx-1.5">
+              •
+            </span>
+            <span className="min-w-0 break-words">
               {assessment.classification === "broke"
                 ? `judge cites turn ${turnNumber}`
                 : assessment.explanation}
             </span>
           </MessageFooter>
-        )}
+        ) : judgement ? (
+          <MessageFooter className="flex-wrap items-baseline gap-y-0.5 px-0 text-[13px]">
+            {judgement.state === "scored" ? (
+              <>
+                <span className="shrink-0 font-semibold text-foreground">Held</span>
+                <span aria-hidden className="mx-1.5">
+                  •
+                </span>
+                <span className="shrink-0">score {judgement.score}/2</span>
+                {judgement.explanation ? (
+                  <>
+                    <span aria-hidden className="mx-1.5">
+                      •
+                    </span>
+                    <span className="min-w-0 break-words">{judgement.explanation}</span>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <span>{judgement.state === "failed" ? "Judge failed" : "Judging…"}</span>
+            )}
+          </MessageFooter>
+        ) : null}
       </MessageContent>
     </Message>
   );

@@ -550,6 +550,8 @@ export interface paths {
                 query?: {
                     /** @description Case-insensitive substring search across run name and description */
                     q?: string;
+                    /** @description Admins only (403 otherwise): list every user's runs instead of just your own, with owner_email set. Admins can also read any run's detail, turns, judgements and results; changing a run stays owner-only. */
+                    all?: boolean;
                 };
                 header?: never;
                 path?: never;
@@ -686,7 +688,47 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        patch?: never;
+        /** Rename a run (admins only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    run_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RunRename"];
+                };
+            };
+            responses: {
+                /** @description The renamed run */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunSummary"];
+                    };
+                };
+                /** @description Caller is not an admin */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Run not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         trace?: never;
     };
     "/runs/{run_id}/turns": {
@@ -1148,6 +1190,8 @@ export interface components {
         UserResponse: {
             id: string;
             email: string;
+            /** @description Admins may list and read every user's runs (read-only). */
+            is_admin: boolean;
         };
         RunCreateRequest: {
             name: string;
@@ -1250,6 +1294,9 @@ export interface components {
             defender_prompt: string | null;
             attacker_prompt: string | null;
         };
+        RunRename: {
+            name: string;
+        };
         RunListItem: {
             /** Format: uuid */
             run_id: string;
@@ -1264,6 +1311,10 @@ export interface components {
             max_turns: number;
             /** Format: date-time */
             created_at: string;
+            /** @description Set only when an admin lists all users' runs. */
+            owner_email?: string | null;
+            /** @description True when a judge scored one of the run's replies as a break. */
+            broke?: boolean;
         };
         RunCost: {
             total_usd: number;
