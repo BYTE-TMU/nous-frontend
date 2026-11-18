@@ -48,7 +48,7 @@ function ExperimentGrid({
   onCreate: () => void;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
       <CreateExperimentCard onClick={onCreate} />
       {experiments.map((exp) => (
         <ExperimentCard key={exp.id} experiment={exp} />
@@ -110,47 +110,76 @@ export default function DashboardContent() {
   const [tab, setTab] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [load, setLoad] = useState<Load>({ state: "loading" });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [allUsers, setAllUsers] = useState(false);
+  const [accountRetry, setAccountRetry] = useState(0);
+  const [runsRetry, setRunsRetry] = useState(0);
 
-  // Only decides whether to offer the "All users" toggle; the backend enforces access.
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    getMe(token)
-      .then((me) => setIsAdmin(me.is_admin))
-      .catch(() => setIsAdmin(false));
-  }, []);
-
-  const fetchRuns = useCallback(async () => {
+    let cancelled = false;
     const token = getToken();
     if (!token) {
       setLoad({ state: "signed-out" });
       return;
     }
     setLoad({ state: "loading" });
-    try {
-      const runs = await (allUsers ? listRuns(token, { all: true }) : listRuns(token));
-      setLoad({ state: "ready", experiments: runs.map(toExperiment) });
-    } catch (failure) {
-      if (failure instanceof ApiError && failure.status === 401) {
-        clearToken();
-        setLoad({ state: "signed-out" });
-        return;
-      }
-      setLoad({
-        state: "error",
-        message:
-          failure instanceof ApiError && failure.status === 0
-            ? "Can't reach the server."
-            : "Couldn't load your experiments.",
+    void getMe(token)
+      .then((me) => {
+        if (cancelled) return;
+        setAllUsers(me.is_admin);
+        setIsAdmin(me.is_admin);
+      })
+      .catch((failure: unknown) => {
+        if (cancelled) return;
+        if (failure instanceof ApiError && failure.status === 401) {
+          clearToken();
+          setLoad({ state: "signed-out" });
+        } else {
+          setLoad({
+            state: "error",
+            message: failure instanceof ApiError && failure.status === 0
+              ? "Can't reach the server."
+              : "Couldn't confirm your account.",
+          });
+        }
       });
-    }
-  }, [allUsers]);
+    return () => { cancelled = true; };
+  }, [accountRetry]);
 
   useEffect(() => {
-    void fetchRuns();
-  }, [fetchRuns]);
+    if (isAdmin === null) return;
+    let cancelled = false;
+    const token = getToken();
+    if (!token) {
+      setLoad({ state: "signed-out" });
+      return;
+    }
+    setLoad({ state: "loading" });
+    void (allUsers ? listRuns(token, { all: true }) : listRuns(token))
+      .then((runs) => {
+        if (!cancelled) setLoad({ state: "ready", experiments: runs.map(toExperiment) });
+      })
+      .catch((failure: unknown) => {
+        if (cancelled) return;
+        if (failure instanceof ApiError && failure.status === 401) {
+          clearToken();
+          setLoad({ state: "signed-out" });
+        } else {
+          setLoad({
+            state: "error",
+            message: failure instanceof ApiError && failure.status === 0
+              ? "Can't reach the server."
+              : "Couldn't load your experiments.",
+          });
+        }
+      });
+    return () => { cancelled = true; };
+  }, [isAdmin, allUsers, runsRetry]);
+
+  const retry = useCallback(() => {
+    if (isAdmin === null) setAccountRetry((value) => value + 1);
+    else setRunsRetry((value) => value + 1);
+  }, [isAdmin]);
 
   // No token, or the backend said 401: this page has nothing to show a signed-out
   // visitor, so send them to log in instead.
@@ -179,17 +208,24 @@ export default function DashboardContent() {
           </TabsTrigger>
         </TabsList>
 
-        {tab === "all" && <div className="flex flex-wrap items-center gap-2">
-          {isAdmin ? (
-            <Button
-              variant={allUsers ? "default" : "outline"}
-              className="rounded-full"
-              aria-pressed={allUsers}
-              onClick={() => setAllUsers((current) => !current)}
-            >
-              All users
-            </Button>
-          ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && (
+            <label>
+              <span className="sr-only">Run owner</span>
+              <select
+                value={allUsers ? "all" : "own"}
+                onChange={(event) => {
+                  setLoad({ state: "loading" });
+                  setAllUsers(event.target.value === "all");
+                }}
+                className="min-h-10 rounded-full border border-border bg-carbon px-4 text-sm text-white"
+              >
+                <option value="all">All users</option>
+                <option value="own">Your runs</option>
+              </select>
+            </label>
+          )}
+          {tab === "all" && <>
           <Button variant="ghost" size="icon">
             <HugeiconsIcon icon={Search01Icon} size={20} />
           </Button>
@@ -216,7 +252,8 @@ export default function DashboardContent() {
             Most recent
             <HugeiconsIcon icon={ChevronDownIcon} size={14} />
           </Button>
-        </div>}
+          </>}
+        </div>
       </div>
 
       <div className="px-6 pb-6">
@@ -225,7 +262,7 @@ export default function DashboardContent() {
           {load.state === "error" && (
             <Notice>
               <p>{load.message}</p>
-              <Button variant="outline" onClick={() => void fetchRuns()}>
+              <Button variant="outline" onClick={retry}>
                 Try again
               </Button>
             </Notice>
@@ -245,7 +282,18 @@ export default function DashboardContent() {
         </TabsContent>
 
         <TabsContent value="compare">
-          <BarGraphPage />
+          {isAdmin === null ? (
+            <Notice>
+              {load.state === "error" ? (
+                <>
+                  <p>{load.message}</p>
+                  <Button variant="outline" onClick={retry}>Try again</Button>
+                </>
+              ) : "Loading experiments…"}
+            </Notice>
+          ) : (
+            <BarGraphPage key={allUsers ? "all-users" : "your-runs"} allUsers={allUsers} />
+          )}
         </TabsContent>
       </div>
 

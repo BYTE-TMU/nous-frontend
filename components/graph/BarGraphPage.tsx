@@ -16,7 +16,7 @@ type Load<T> =
   | { state: "error"; message: string }
   | { state: "ready"; value: T };
 
-const SELECT = "min-h-10 rounded-full border border-graphite bg-carbon px-4 text-sm text-white";
+const SELECT = "min-h-10 min-w-0 w-full rounded-full border border-graphite bg-carbon px-4 text-sm text-white";
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError && error.status === 0) return "Can't reach the server.";
@@ -25,7 +25,7 @@ function errorMessage(error: unknown): string {
   return "Couldn't load graph data.";
 }
 
-export default function BarGraphPage({ runId }: { runId?: string }) {
+export default function BarGraphPage({ runId, allUsers = false }: { runId?: string; allUsers?: boolean }) {
   const router = useRouter();
   const [current, setCurrent] = useState<Load<GraphRun>>({ state: "loading" });
   const [recent, setRecent] = useState<Load<GraphRun[]>>({ state: "loading" });
@@ -71,7 +71,7 @@ export default function BarGraphPage({ runId }: { runId?: string }) {
       return;
     }
     setRecent({ state: "loading" });
-    void listRuns(token)
+    void (allUsers ? listRuns(token, { all: true }) : listRuns(token))
       .then(async (runs) => {
         const selectedRuns = mode === "recent" ? runs.slice(0, 10) : runs;
         const loaded: GraphRun[] = [];
@@ -91,7 +91,7 @@ export default function BarGraphPage({ runId }: { runId?: string }) {
         }
       });
     return () => { cancelled = true; };
-  }, [mode, reload, router]);
+  }, [mode, reload, router, allUsers]);
 
   const load: Load<GraphRun[]> = mode === "current"
     ? current.state === "ready" ? { state: "ready", value: [current.value] } : current
@@ -140,8 +140,8 @@ export default function BarGraphPage({ runId }: { runId?: string }) {
           </label>
           <details className="relative">
             <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-full border border-graphite bg-carbon px-4 text-sm [&::-webkit-details-marker]:hidden">Filter ▾</summary>
-            <div className="absolute right-0 z-20 mt-2 grid w-52 max-w-[calc(100vw-2rem)] gap-3 rounded-xl border border-graphite bg-carbon p-4 shadow-xl sm:w-64">
-              <label className="grid gap-1 text-xs text-ash">
+            <div className="absolute right-0 z-20 mt-2 grid w-52 max-w-[calc(100vw-2rem)] grid-cols-[minmax(0,1fr)] gap-3 rounded-xl border border-graphite bg-carbon p-4 shadow-xl sm:w-64">
+              <label className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 text-xs text-ash">
                 Outcome
                 <select value={outcome} onChange={(event) => setOutcome(event.target.value)} className={SELECT}>
                   <option value="all">All outcomes</option>
@@ -151,14 +151,14 @@ export default function BarGraphPage({ runId }: { runId?: string }) {
                   <option value="in progress">In progress</option>
                 </select>
               </label>
-              <label className="grid gap-1 text-xs text-ash">
+              <label className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 text-xs text-ash">
                 Attacker model
                 <select value={attacker} onChange={(event) => setAttacker(event.target.value)} className={SELECT}>
                   <option value="all">All attackers</option>
                   {attackers.map((model) => <option key={model} value={model}>{model}</option>)}
                 </select>
               </label>
-              <label className="grid gap-1 text-xs text-ash">
+              <label className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 text-xs text-ash">
                 Defender model
                 <select value={defender} onChange={(event) => setDefender(event.target.value)} className={SELECT}>
                   <option value="all">All defenders</option>
@@ -174,8 +174,8 @@ export default function BarGraphPage({ runId }: { runId?: string }) {
           <Button variant="outline" className="rounded-full" onClick={() => setReload((value) => value + 1)}>Refresh</Button>
         </div>
       </div>
-      {mode === "recent" && <p className="mt-4 text-sm text-smoke">Showing your 10 most recent runs.</p>}
-      {mode === "all" && <p className="mt-4 text-sm text-smoke">Showing all your runs.</p>}
+      {mode === "recent" && <p className="mt-4 text-sm text-smoke">{allUsers ? "Showing the 10 most recent runs from all users." : "Showing your 10 most recent runs."}</p>}
+      {mode === "all" && <p className="mt-4 text-sm text-smoke">{allUsers ? "Showing runs from all users." : "Showing all your runs."}</p>}
       <section aria-label="Run graph" className="mt-6 rounded-2xl border border-graphite bg-night/90 p-4 sm:p-6">
         {load.state === "loading" && <p role="status" className="py-20 text-center text-smoke">Loading graph…</p>}
         {load.state === "error" && (

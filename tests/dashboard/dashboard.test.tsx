@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardContent from "../../components/dashboard/DashboardContent";
@@ -76,18 +76,34 @@ describe("DashboardContent", () => {
     getMe.mockResolvedValue({ id: "u1", email: "u@example.com", is_admin: false });
   });
 
-  it("offers an All users view only to admins, and shows each run's owner", async () => {
+  it("defaults admins to all users and applies Your runs in the dashboard and comparison", async () => {
     window.localStorage.setItem("nous.access_token", "tok");
     getMe.mockResolvedValue({ id: "u1", email: "a@example.com", is_admin: true });
-    listRuns.mockResolvedValueOnce([run()]);
-    listRuns.mockResolvedValueOnce([run({ owner_email: "other@example.com" })]);
+    const mine = run({ name: "My run", state: "completed" });
+    const other = run({ run_id: "r2", name: "Other run", state: "completed", owner_email: "other@example.com" });
+    listRuns.mockImplementation((_token: string, options?: { all?: boolean }) =>
+      Promise.resolve(options?.all ? [other, mine] : [mine]),
+    );
+    getRunResults.mockResolvedValue({
+      outcome: "held", break_turn: null, turns_completed: 1, judge_verdict: null,
+      per_turn: [{ turn: 1, classification: 0 }],
+      cost: { total_usd: 0, total_tokens: 0, breakdown: [] },
+    });
     render(<DashboardContent />);
-    expect(await screen.findByText("Refund test")).toBeInTheDocument();
-    expect(screen.queryByText(/by other@example.com/)).not.toBeInTheDocument();
-
-    await userEvent.setup().click(await screen.findByRole("button", { name: "All users" }));
     expect(await screen.findByText("by other@example.com")).toBeInTheDocument();
     expect(listRuns).toHaveBeenLastCalledWith("tok", { all: true });
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("Run owner"), "own");
+    expect(await screen.findByText("My run")).toBeInTheDocument();
+    expect(screen.queryByText("Other run")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    expect(await screen.findByRole("button", { name: /My run, turn 1: Held/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Other run, turn/ })).not.toBeInTheDocument();
+    expect(listRuns).toHaveBeenLastCalledWith("tok");
+    await user.selectOptions(screen.getByLabelText("Run owner"), "all");
+    expect(await screen.findByRole("button", { name: /Other run, turn 1: Held/ })).toBeInTheDocument();
+    expect(listRuns).toHaveBeenLastCalledWith("tok", { all: true });
+    expect(screen.getByText("Showing runs from all users.")).toBeInTheDocument();
   });
 
   it("hides the All users toggle from non-admins", async () => {
@@ -95,7 +111,7 @@ describe("DashboardContent", () => {
     listRuns.mockResolvedValue([run()]);
     render(<DashboardContent />);
     expect(await screen.findByText("Refund test")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "All users" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Run owner")).not.toBeInTheDocument();
   });
 
   it("sends the user to /login, without calling the backend, when there is no token", async () => {
@@ -158,6 +174,18 @@ describe("DashboardContent", () => {
     expect(screen.getByRole("link", { name: "Open Held" })).toHaveClass("from-impact-green/15", "border-border");
     expect(screen.getByRole("link", { name: "Open Broke" })).toHaveClass("from-status-broke/15", "border-border");
     expect(screen.getByRole("link", { name: "Open Failed" })).toHaveClass("from-status-inconclusive/15", "border-border");
+    expect(within(running).getByRole("progressbar", { name: "Completed turns" })).toHaveAttribute("aria-valuenow", "3");
+  });
+
+  it("shows a retryable error if account permissions cannot be determined", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    getMe.mockRejectedValueOnce(new ApiError(0, "offline"));
+    listRuns.mockResolvedValue([run()]);
+    render(<DashboardContent />);
+    expect(await screen.findByText("Can't reach the server.")).toBeInTheDocument();
+    expect(listRuns).not.toHaveBeenCalled();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Refund test")).toBeInTheDocument();
   });
 
   it("still offers Create new experiment when the user has no runs", async () => {
