@@ -25,18 +25,19 @@ function errorMessage(error: unknown): string {
   return "Couldn't load graph data.";
 }
 
-export default function BarGraphPage({ runId }: { runId: string }) {
+export default function BarGraphPage({ runId }: { runId?: string }) {
   const router = useRouter();
   const [current, setCurrent] = useState<Load<GraphRun>>({ state: "loading" });
   const [recent, setRecent] = useState<Load<GraphRun[]>>({ state: "loading" });
-  const [mode, setMode] = useState<"current" | "recent">("current");
-  const [selectedId, setSelectedId] = useState(runId);
+  const [mode, setMode] = useState<"current" | "recent" | "all">(runId ? "current" : "all");
+  const [selectedId, setSelectedId] = useState(runId ?? "");
   const [outcome, setOutcome] = useState("all");
   const [attacker, setAttacker] = useState("all");
   const [defender, setDefender] = useState("all");
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
+    if (!runId) return;
     let cancelled = false;
     const token = getToken();
     if (!token) {
@@ -62,7 +63,7 @@ export default function BarGraphPage({ runId }: { runId: string }) {
   }, [runId, reload, router]);
 
   useEffect(() => {
-    if (mode !== "recent") return;
+    if (mode === "current") return;
     let cancelled = false;
     const token = getToken();
     if (!token) {
@@ -71,9 +72,14 @@ export default function BarGraphPage({ runId }: { runId: string }) {
     }
     setRecent({ state: "loading" });
     void listRuns(token)
-      .then((runs) => Promise.all(runs.slice(0, 10).map((run) => loadGraphRun(run, token))))
-      .then((runs) => {
-        if (!cancelled) setRecent({ state: "ready", value: runs });
+      .then(async (runs) => {
+        const selectedRuns = mode === "recent" ? runs.slice(0, 10) : runs;
+        const loaded: GraphRun[] = [];
+        for (let i = 0; i < selectedRuns.length; i += 5) {
+          if (cancelled) return;
+          loaded.push(...await Promise.all(selectedRuns.slice(i, i + 5).map((run) => loadGraphRun(run, token))));
+        }
+        if (!cancelled) setRecent({ state: "ready", value: loaded });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -101,15 +107,15 @@ export default function BarGraphPage({ runId }: { runId: string }) {
   const selected = filtered.find((run) => run.summary.run_id === selectedId) ?? filtered[0];
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-      <Link href={`/experiment/${encodeURIComponent(runId)}`} className="text-sm text-ash underline underline-offset-4 hover:text-signal-lime">
+    <div className={runId ? "mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8" : "mx-auto max-w-7xl pb-8"}>
+      {runId && <Link href={`/experiment/${encodeURIComponent(runId)}`} className="text-sm text-ash underline underline-offset-4 hover:text-signal-lime">
         Back to experiment
-      </Link>
-      <div className="mt-6 flex flex-wrap items-end justify-between gap-5">
+      </Link>}
+      <div className={`${runId ? "mt-6" : "mt-2"} flex flex-wrap items-end justify-between gap-5`}>
         <div>
           <p className="font-mono text-xs tracking-[0.18em] text-signal-lime">BAR GRAPH</p>
           <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
-            {current.state === "ready" ? current.value.summary.name : "Experiment"}
+            {runId ? (current.state === "ready" ? current.value.summary.name : "Experiment") : "Compare experiments"}
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -118,15 +124,17 @@ export default function BarGraphPage({ runId }: { runId: string }) {
             <select
               value={mode}
               onChange={(event) => {
-                setMode(event.target.value === "recent" ? "recent" : "current");
+                const value = event.target.value;
+                setMode(value === "recent" ? "recent" : value === "current" && runId ? "current" : "all");
                 setOutcome("all");
                 setAttacker("all");
                 setDefender("all");
-                setSelectedId(runId);
+                setSelectedId(runId ?? "");
               }}
               className="min-h-10 rounded-full bg-signal-lime px-4 text-sm font-medium text-night"
             >
-              <option value="current">Current</option>
+              {runId && <option value="current">Current</option>}
+              <option value="all">All runs</option>
               <option value="recent">Last 10 runs</option>
             </select>
           </label>
@@ -167,6 +175,7 @@ export default function BarGraphPage({ runId }: { runId: string }) {
         </div>
       </div>
       {mode === "recent" && <p className="mt-4 text-sm text-smoke">Showing your 10 most recent runs.</p>}
+      {mode === "all" && <p className="mt-4 text-sm text-smoke">Showing all your runs.</p>}
       <section aria-label="Run graph" className="mt-6 rounded-2xl border border-graphite bg-night/90 p-4 sm:p-6">
         {load.state === "loading" && <p role="status" className="py-20 text-center text-smoke">Loading graph…</p>}
         {load.state === "error" && (
@@ -185,6 +194,6 @@ export default function BarGraphPage({ runId }: { runId: string }) {
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }

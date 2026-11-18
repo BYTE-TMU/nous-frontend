@@ -16,7 +16,6 @@ export type GraphRun = {
   turns: GraphTurn[];
   outcome: GraphOutcome;
   breakTurn: number | null;
-  verdict: string | null;
 };
 
 function score(value: number | null): GraphScore | null {
@@ -32,7 +31,6 @@ export async function loadGraphRun(summary: Summary | RunListItem, token: string
       turns: result.per_turn.map((turn) => ({ number: turn.turn, score: score(turn.classification) })),
       outcome: result.outcome,
       breakTurn: result.break_turn,
-      verdict: result.judge_verdict?.explanation ?? null,
     };
   }
 
@@ -52,6 +50,5 @@ export async function loadGraphRun(summary: Summary | RunListItem, token: string
     turns,
     outcome: breakTurn !== null ? "broke" : summary.state === "failed" ? "inconclusive" : "in progress",
     breakTurn,
-    verdict: null,
   };
 }

@@ -7,6 +7,7 @@ import ExperimentStatus, {
   ExperimentStatusEnum,
 } from "@/components/experiment/ExperimentStatus";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 export interface Experiment {
   id: string;
@@ -23,6 +24,13 @@ export interface Experiment {
   owner?: string;
 }
 
+const STATUS_GRADIENT = {
+  [ExperimentStatusEnum.IN_PROGRESS]: "from-status-in-progress/15",
+  [ExperimentStatusEnum.BROKE]: "from-status-broke/15",
+  [ExperimentStatusEnum.HELD]: "from-impact-green/15",
+  [ExperimentStatusEnum.INCONCLUSIVE]: "from-status-inconclusive/15",
+};
+
 export default function ExperimentCard({
   experiment,
 }: {
@@ -32,7 +40,10 @@ export default function ExperimentCard({
     <Link
       href={`/experiment/${experiment.id}`}
       aria-label={`Open ${experiment.name}`}
-      className="flex flex-col rounded-2xl border-2 border-border bg-card p-5 transition-colors hover:bg-muted"
+      className={cn(
+        "flex flex-col rounded-2xl border-2 border-border bg-card bg-gradient-to-br via-card to-card p-5 transition-[filter] hover:brightness-110",
+        STATUS_GRADIENT[experiment.status],
+      )}
     >
       <div className="flex items-center justify-between mb-3">
         <Button variant="outline" size="sm" className="rounded-full">
@@ -43,7 +54,7 @@ export default function ExperimentCard({
 
       <h3 className="text-lg font-bold mb-2">{experiment.name}</h3>
 
-      <div className="flex items-center gap-2 mb-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-border px-3 py-1 text-xs">
           {experiment.attacker}
         </span>

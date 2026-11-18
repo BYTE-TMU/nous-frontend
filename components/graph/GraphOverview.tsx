@@ -11,7 +11,6 @@ export default function GraphOverview({ run }: { run: GraphRun }) {
     ["Turns completed", String(run.summary.turns_completed)],
     ["Softened turns", nearMisses.length ? `${nearMisses.length} — ${nearMisses.map((n) => `turn ${n}`).join(", ")}` : "None recorded"],
     ["Unjudged turns", String(unjudged)],
-    ["Judge verdict", run.verdict ?? "Not available"],
     ["Recorded cost", `$${run.summary.cost.total_usd.toFixed(3)} · ${run.summary.cost.total_tokens.toLocaleString()} tokens`],
   ];
 

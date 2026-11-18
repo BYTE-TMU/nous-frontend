@@ -7,14 +7,17 @@ import { ExperimentStatusEnum } from "../../components/experiment/ExperimentStat
 import { ApiError, type RunListItem } from "../../lib/api";
 
 const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace }) }));
+const router = { push: vi.fn(), replace };
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
 const listRuns = vi.fn();
 const getMe = vi.fn();
+const getRunResults = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/api")>()),
   listRuns: (...args: unknown[]) => listRuns(...args),
   getMe: (...args: unknown[]) => getMe(...args),
+  getRunResults: (...args: unknown[]) => getRunResults(...args),
 }));
 
 const run = (overrides: Partial<RunListItem> = {}): RunListItem => ({
@@ -114,6 +117,47 @@ describe("DashboardContent", () => {
       "/experiment/r1",
     );
     expect(screen.getByText("Create new experiment")).toBeInTheDocument();
+  });
+
+  it("opens a shared graph in Compare, with all runs or the latest ten", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    const runs = Array.from({ length: 11 }, (_, i) =>
+      run({ run_id: `r${i + 1}`, name: `Run ${i + 1}`, state: "completed" }),
+    );
+    listRuns.mockResolvedValue(runs);
+    getRunResults.mockResolvedValue({
+      outcome: "held", break_turn: null, turns_completed: 1,
+      judge_verdict: { cited_turn: 1, explanation: "Verdict text", excerpt: null },
+      per_turn: [{ turn: 1, classification: 0 }],
+      cost: { total_usd: 0, total_tokens: 0, breakdown: [] },
+    });
+    render(<DashboardContent />);
+    await screen.findByText("Run 1");
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    expect(await screen.findByRole("button", { name: /Run 11, turn 1: Held/ })).toBeInTheDocument();
+    expect(screen.queryByText("Verdict text")).not.toBeInTheDocument();
+    expect(screen.queryByText("Judge verdict")).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Runs to display"), "recent");
+    await screen.findByRole("button", { name: /Run 10, turn 1: Held/ });
+    expect(screen.queryByRole("button", { name: /Run 11, turn 1: Held/ })).not.toBeInTheDocument();
+    expect(listRuns).toHaveBeenLastCalledWith("tok");
+  });
+
+  it("uses each status colour for the card background while keeping a neutral border", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    listRuns.mockResolvedValue([
+      run({ name: "Running" }),
+      run({ run_id: "r2", name: "Held", state: "completed" }),
+      run({ run_id: "r3", name: "Broke", state: "completed", broke: true }),
+      run({ run_id: "r4", name: "Failed", state: "failed" }),
+    ]);
+    render(<DashboardContent />);
+    const running = await screen.findByRole("link", { name: "Open Running" });
+    expect(running).toHaveClass("from-status-in-progress/15", "border-border");
+    expect(screen.getByRole("link", { name: "Open Held" })).toHaveClass("from-impact-green/15", "border-border");
+    expect(screen.getByRole("link", { name: "Open Broke" })).toHaveClass("from-status-broke/15", "border-border");
+    expect(screen.getByRole("link", { name: "Open Failed" })).toHaveClass("from-status-inconclusive/15", "border-border");
   });
 
   it("still offers Create new experiment when the user has no runs", async () => {

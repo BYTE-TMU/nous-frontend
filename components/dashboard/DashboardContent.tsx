@@ -22,6 +22,7 @@ import ExperimentCard, { type Experiment } from "./ExperimentCard";
 import ExperimentRow from "./ExperimentRow";
 import CreateExperimentCard from "./CreateExperimentCard";
 import { NewExperimentDialog } from "@/components/new-experiment/NewExperimentDialog";
+import BarGraphPage from "@/components/graph/BarGraphPage";
 
 type ViewMode = "grid" | "list";
 
@@ -47,7 +48,7 @@ function ExperimentGrid({
   onCreate: () => void;
 }) {
   return (
-    <div className="grid grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
       <CreateExperimentCard onClick={onCreate} />
       {experiments.map((exp) => (
         <ExperimentCard key={exp.id} experiment={exp} />
@@ -106,6 +107,7 @@ function ExperimentList({
 export default function DashboardContent() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [tab, setTab] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [isAdmin, setIsAdmin] = useState(false);
@@ -160,8 +162,8 @@ export default function DashboardContent() {
   if (signedOut) return null;
 
   return (
-    <Tabs defaultValue="all">
-      <div className="flex items-center justify-between px-6 py-4">
+    <Tabs value={tab} onValueChange={setTab}>
+      <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
         <TabsList variant="line" className="gap-2 bg-transparent p-0 h-auto">
           <TabsTrigger
             value="all"
@@ -177,7 +179,7 @@ export default function DashboardContent() {
           </TabsTrigger>
         </TabsList>
 
-        <div className="flex items-center gap-2">
+        {tab === "all" && <div className="flex flex-wrap items-center gap-2">
           {isAdmin ? (
             <Button
               variant={allUsers ? "default" : "outline"}
@@ -214,7 +216,7 @@ export default function DashboardContent() {
             Most recent
             <HugeiconsIcon icon={ChevronDownIcon} size={14} />
           </Button>
-        </div>
+        </div>}
       </div>
 
       <div className="px-6 pb-6">
@@ -243,9 +245,7 @@ export default function DashboardContent() {
         </TabsContent>
 
         <TabsContent value="compare">
-          <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Compare view coming soon
-          </div>
+          <BarGraphPage />
         </TabsContent>
       </div>
 
