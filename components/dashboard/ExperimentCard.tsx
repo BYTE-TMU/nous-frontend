@@ -7,6 +7,8 @@ import ExperimentStatus, {
   ExperimentStatusEnum,
 } from "@/components/experiment/ExperimentStatus";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { DELETABLE_STATES, type RunListItem } from "@/lib/api";
 
 export interface Experiment {
   id: string;
@@ -19,6 +21,7 @@ export interface Experiment {
   totalTurns: number;
   status: ExperimentStatusEnum;
   cost: string;
+  state: RunListItem["state"];
   /** Set only in the admin "all users" view. */
   owner?: string;
 }
@@ -46,8 +49,10 @@ const STATUS_PROGRESS = {
 
 export default function ExperimentCard({
   experiment,
+  onDelete,
 }: {
   experiment: Experiment;
+  onDelete?: (experiment: Experiment) => void;
 }) {
   return (
     <Link
@@ -104,10 +109,28 @@ export default function ExperimentCard({
           </div>
         )}
         <div className="mt-3 flex items-center justify-between gap-2 font-mono text-xs">
-        <span className="text-muted-foreground">{experiment.date}</span>
-        <span className={experiment.status === ExperimentStatusEnum.BROKE ? "text-fox-red" : "text-ash"}>
-          turn {experiment.currentTurn} / {experiment.totalTurns}
-        </span>
+          <span className="text-muted-foreground">{experiment.date}</span>
+          <div className="flex items-center gap-2">
+            <span className={experiment.status === ExperimentStatusEnum.BROKE ? "text-fox-red" : "text-ash"}>
+              turn {experiment.currentTurn} / {experiment.totalTurns}
+            </span>
+            {onDelete && DELETABLE_STATES.includes(experiment.state) ? (
+              <Button
+                variant="destructive"
+                size="xs"
+                className="rounded-full font-sans"
+                aria-label={`Delete ${experiment.name}`}
+                onClick={(event) => {
+                  // The whole card is a link: don't open the run.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onDelete(experiment);
+                }}
+              >
+                Delete
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
     </Link>

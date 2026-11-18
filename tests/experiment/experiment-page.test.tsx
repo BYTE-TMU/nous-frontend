@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ExperimentPage from "../../components/experiment/ExperimentPage";
@@ -20,10 +20,12 @@ const getRunJudgements = vi.fn();
 const getRunResults = vi.fn();
 const getMe = vi.fn();
 const renameRun = vi.fn();
+const deleteRun = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/api")>()),
   getMe: (...args: unknown[]) => getMe(...args),
   renameRun: (...args: unknown[]) => renameRun(...args),
+  deleteRun: (...args: unknown[]) => deleteRun(...args),
   getRun: (...args: unknown[]) => getRun(...args),
   getRunTurns: (...args: unknown[]) => getRunTurns(...args),
   getRunJudgements: (...args: unknown[]) => getRunJudgements(...args),
@@ -255,5 +257,51 @@ describe("ExperimentPage", () => {
       await vi.advanceTimersByTimeAsync(10000);
     });
     expect(getRun).toHaveBeenCalledTimes(2);
+  });
+
+  describe("deleting the run", () => {
+    const deleter = { id: "u", email: "a@b.c", is_admin: true, can_delete_runs: true };
+
+    it("hides Delete from admins without delete permission, but still lets them rename", async () => {
+      getMe.mockResolvedValue({ ...deleter, can_delete_runs: false });
+      render(<ExperimentPage runId="abc" />);
+      expect(await screen.findByRole("button", { name: "Rename" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+    });
+
+    it("hides Delete while the run is still going", async () => {
+      getMe.mockResolvedValue(deleter);
+      getRun.mockResolvedValue(run());
+      render(<ExperimentPage runId="abc" />);
+      expect(await screen.findByRole("button", { name: "Pause" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+    });
+
+    it("deletes after confirming and goes back to the dashboard", async () => {
+      getMe.mockResolvedValue(deleter);
+      deleteRun.mockResolvedValue(undefined);
+      render(<ExperimentPage runId="abc" />);
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Delete" }));
+      const dialog = await screen.findByRole("dialog");
+      expect(within(dialog).getByText(/Refund test/)).toBeInTheDocument();
+      await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+      expect(deleteRun).toHaveBeenCalledWith("abc", "tok");
+      expect(replace).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it("stays on the page with a message when the backend says no", async () => {
+      getMe.mockResolvedValue(deleter);
+      deleteRun.mockRejectedValue(new ApiError(403, "no"));
+      render(<ExperimentPage runId="abc" />);
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Delete" }));
+      const dialog = await screen.findByRole("dialog");
+      await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        "You don't have permission to delete runs.",
+      );
+      expect(replace).not.toHaveBeenCalled();
+    });
   });
 });

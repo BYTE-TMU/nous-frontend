@@ -23,6 +23,7 @@ import ExperimentRow from "./ExperimentRow";
 import CreateExperimentCard from "./CreateExperimentCard";
 import { NewExperimentDialog } from "@/components/new-experiment/NewExperimentDialog";
 import BarGraphPage from "@/components/graph/BarGraphPage";
+import DeleteRunDialog from "@/components/runs/DeleteRunDialog";
 
 type ViewMode = "grid" | "list";
 
@@ -43,15 +44,17 @@ function Notice({ children }: { children: React.ReactNode }) {
 function ExperimentGrid({
   experiments,
   onCreate,
+  onDelete,
 }: {
   experiments: Experiment[];
   onCreate: () => void;
+  onDelete?: (experiment: Experiment) => void;
 }) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
       <CreateExperimentCard onClick={onCreate} />
       {experiments.map((exp) => (
-        <ExperimentCard key={exp.id} experiment={exp} />
+        <ExperimentCard key={exp.id} experiment={exp} onDelete={onDelete} />
       ))}
     </div>
   );
@@ -60,13 +63,15 @@ function ExperimentGrid({
 function ExperimentList({
   experiments,
   onCreate,
+  onDelete,
 }: {
   experiments: Experiment[];
   onCreate: () => void;
+  onDelete?: (experiment: Experiment) => void;
 }) {
   return (
     <div>
-      <div className="grid grid-cols-[180px_1fr_1fr_1fr_100px_140px_100px] items-center gap-4 rounded-t-2xl border-2 border-border px-6 py-4">
+      <div className="grid grid-cols-[180px_1fr_1fr_1fr_100px_140px_100px_90px] items-center gap-4 rounded-t-2xl border-2 border-border px-6 py-4">
         <span className="text-sm font-semibold underline">Status</span>
         <span className="text-sm font-semibold underline">Experiment</span>
         <span className="text-sm font-semibold underline">
@@ -76,6 +81,7 @@ function ExperimentList({
         <span className="text-sm font-semibold underline">Cost</span>
         <span className="text-sm font-semibold underline">Date</span>
         <span className="text-sm font-semibold underline">Turns</span>
+        <span />
       </div>
 
       <button
@@ -98,6 +104,7 @@ function ExperimentList({
           key={exp.id}
           experiment={exp}
           isLast={i === experiments.length - 1}
+          onDelete={onDelete}
         />
       ))}
     </div>
@@ -114,6 +121,9 @@ export default function DashboardContent() {
   const [allUsers, setAllUsers] = useState(false);
   const [accountRetry, setAccountRetry] = useState(0);
   const [runsRetry, setRunsRetry] = useState(0);
+  const [canDelete, setCanDelete] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Experiment | null>(null);
+  const onDelete = canDelete ? setPendingDelete : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +138,7 @@ export default function DashboardContent() {
         if (cancelled) return;
         setAllUsers(me.is_admin);
         setIsAdmin(me.is_admin);
+        setCanDelete(me.can_delete_runs === true);
       })
       .catch((failure: unknown) => {
         if (cancelled) return;
@@ -272,11 +283,13 @@ export default function DashboardContent() {
               <ExperimentGrid
                 experiments={load.experiments}
                 onCreate={() => setCreateOpen(true)}
+                onDelete={onDelete}
               />
             ) : (
               <ExperimentList
                 experiments={load.experiments}
                 onCreate={() => setCreateOpen(true)}
+                onDelete={onDelete}
               />
             ))}
         </TabsContent>
@@ -298,6 +311,14 @@ export default function DashboardContent() {
       </div>
 
       <NewExperimentDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <DeleteRunDialog
+        run={pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onDeleted={() => {
+          setPendingDelete(null);
+          setRunsRetry((value) => value + 1);
+        }}
+      />
     </Tabs>
   );
 }
