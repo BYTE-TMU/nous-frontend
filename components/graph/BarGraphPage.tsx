@@ -140,7 +140,7 @@ export default function BarGraphPage({ runId }: { runId?: string }) {
           </label>
           <details className="relative">
             <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-full border border-graphite bg-carbon px-4 text-sm [&::-webkit-details-marker]:hidden">Filter ▾</summary>
-            <div className="absolute right-0 z-20 mt-2 grid w-64 max-w-[calc(100vw-2rem)] gap-3 rounded-xl border border-graphite bg-carbon p-4 shadow-xl">
+            <div className="absolute right-0 z-20 mt-2 grid w-52 max-w-[calc(100vw-2rem)] gap-3 rounded-xl border border-graphite bg-carbon p-4 shadow-xl sm:w-64">
               <label className="grid gap-1 text-xs text-ash">
                 Outcome
                 <select value={outcome} onChange={(event) => setOutcome(event.target.value)} className={SELECT}>

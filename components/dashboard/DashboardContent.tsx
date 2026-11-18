@@ -167,13 +167,13 @@ export default function DashboardContent() {
         <TabsList variant="line" className="gap-2 bg-transparent p-0 h-auto">
           <TabsTrigger
             value="all"
-            className="rounded-full border border-border px-5 py-1.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground after:hidden"
+            className="rounded-full border border-border px-5 py-1.5 text-sm font-medium group-data-[variant=line]/tabs-list:data-active:bg-primary group-data-[variant=line]/tabs-list:data-active:text-night after:hidden"
           >
             All
           </TabsTrigger>
           <TabsTrigger
             value="compare"
-            className="rounded-full border border-border px-5 py-1.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground after:hidden"
+            className="rounded-full border border-border px-5 py-1.5 text-sm font-medium group-data-[variant=line]/tabs-list:data-active:bg-primary group-data-[variant=line]/tabs-list:data-active:text-night after:hidden"
           >
             Compare
           </TabsTrigger>
