@@ -25,7 +25,7 @@ export default function GoogleCallbackPage() {
 
       try {
         await completeGoogleLogin(code);
-        router.replace("/");
+        router.replace("/dashboard");
       } catch {
         setError("Google sign-in failed or the authentication code expired. Please try again.");
       }

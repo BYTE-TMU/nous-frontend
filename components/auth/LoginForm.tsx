@@ -10,7 +10,7 @@ import { AuthButton } from "./AuthButton";
 import { AuthCard } from "./AuthCard";
 import { AuthField } from "./AuthField";
 
-const AFTER_LOGIN_PATH = "/";
+const AFTER_LOGIN_PATH = "/dashboard";
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 const REJECTED_STATUSES = new Set([400, 401, 403]);
 const INVALID_EMAIL = "Enter a valid email address.";

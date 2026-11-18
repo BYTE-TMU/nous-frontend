@@ -24,7 +24,7 @@ export default function ChatHeader({ name, status, attacker, defender, controls 
           size="icon-lg"
           className="size-11 rounded-[13px] bg-black text-signal-lime hover:bg-signal-lime hover:text-night"
         >
-          <Link href="/" aria-label="All experiments" title="All experiments">
+          <Link href="/dashboard" aria-label="All experiments" title="All experiments">
             <HugeiconsIcon icon={ArrowLeft01Icon} className="size-6" />
           </Link>
         </Button>

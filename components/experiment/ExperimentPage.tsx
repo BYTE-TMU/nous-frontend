@@ -122,7 +122,7 @@ export default function ExperimentPage({ runId }: { runId: string }) {
       <Notice>
         <p>We couldn&apos;t find this experiment.</p>
         <Button asChild variant="outline">
-          <Link href="/">Back to experiments</Link>
+          <Link href="/dashboard">Back to experiments</Link>
         </Button>
       </Notice>
     );
