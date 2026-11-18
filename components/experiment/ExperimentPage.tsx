@@ -147,7 +147,10 @@ export default function ExperimentPage({ runId }: { runId: string }) {
         attacker={view.attacker}
         defender={view.defender}
         controls={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button asChild variant="outline">
+              <Link href={`/experiment/${encodeURIComponent(runId)}/graph`}>Bar graph</Link>
+            </Button>
             {admin ? <RenameRun runId={runId} name={view.name} onRenamed={refresh} /> : null}
             {view.live ? (
               <RunControls runId={runId} state={view.state} onChanged={refresh} />

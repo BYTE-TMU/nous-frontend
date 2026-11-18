@@ -198,6 +198,7 @@ describe("ExperimentPage", () => {
     expect(await screen.findByText("Please?")).toBeInTheDocument();
     expect(screen.getByText("No.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Refund test" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Bar graph" })).toHaveAttribute("href", "/experiment/abc/graph");
     expect(getRun).toHaveBeenCalledWith("abc", "tok");
     expect(getRunTurns).toHaveBeenCalledWith("abc", "tok");
   });

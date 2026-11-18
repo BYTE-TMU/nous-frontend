@@ -17,8 +17,8 @@ type Props = {
 
 export default function ChatHeader({ name, status, attacker, defender, controls }: Props) {
   return (
-    <div className="flex flex-row items-center justify-between w-full gap-4 border-b p-4">
-      <div className="flex min-w-40 justify-start">
+    <div className="flex w-full flex-wrap items-center justify-between gap-4 border-b p-4 lg:flex-nowrap">
+      <div className="order-1 flex justify-start lg:min-w-40">
         <Button
           asChild
           size="icon-lg"
@@ -29,8 +29,10 @@ export default function ChatHeader({ name, status, attacker, defender, controls 
           </Link>
         </Button>
       </div>
-      <ExperimentMetadata name={name} status={status} attacker={attacker} defender={defender} />
-      <div className="flex min-w-40 justify-end">{controls}</div>
+      <div className="order-3 min-w-0 w-full lg:order-2 lg:flex-1">
+        <ExperimentMetadata name={name} status={status} attacker={attacker} defender={defender} />
+      </div>
+      <div className="order-2 flex max-w-full justify-end lg:order-3 lg:min-w-40">{controls}</div>
     </div>
   );
 }
