@@ -197,6 +197,35 @@
   background-size: 64px 64px;
 }
 
+.neural-branch {
+  stroke: var(--color-blue-freeze);
+  stroke-width: 2;
+  opacity: 0.16;
+}
+.neural-cell {
+  stroke: var(--color-blue-freeze);
+  stroke-width: 2;
+  opacity: 0.2;
+}
+.neural-signal {
+  stroke: var(--color-paper);
+  stroke-width: 2.5;
+  opacity: 0;
+}
+.neural-brand {
+  opacity: 0;
+}
+.neural-opening[data-active="true"] .neural-greek {
+  opacity: 0;
+}
+.neural-opening[data-active="true"] .neural-brand {
+  opacity: 1;
+}
+.neural-opening[data-active="true"] .neural-branch,
+.neural-opening[data-active="true"] .neural-cell {
+  opacity: 0.35;
+}
+
 /* Pointer parallax in FaceOff: --px/--py run roughly -0.5 → 0.5. */
 .landing-faceoff {
   --px: 0;
@@ -216,6 +245,42 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .neural-greek,
+  .neural-brand {
+    transition:
+      opacity 850ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 1000ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 850ms ease;
+  }
+  .neural-greek {
+    transform: scale(1);
+    filter: blur(0);
+  }
+  .neural-brand {
+    transform: scale(0.97);
+    filter: blur(8px);
+  }
+  .neural-opening[data-active="true"] .neural-greek {
+    transform: scale(1.03);
+    filter: blur(8px);
+  }
+  .neural-opening[data-active="true"] .neural-brand {
+    transform: scale(1);
+    filter: blur(0);
+    transition-delay: 120ms;
+  }
+  .neural-branch,
+  .neural-cell {
+    transition: opacity 650ms ease;
+  }
+  .neural-opening[data-active="true"] .neural-signal {
+    stroke-dasharray: 7 93;
+    filter: drop-shadow(0 0 5px var(--color-blue-freeze));
+    animation: neural-fire 2.4s linear infinite;
+  }
+  .neural-opening[data-active="true"] .neural-cell {
+    animation: neural-pulse 2.4s ease-in-out infinite;
+  }
   /* Visible unless JS has marked it pending (see components/landing/Reveal.tsx). */
   .landing-reveal {
     transition:
@@ -272,6 +337,16 @@
   .landing-aurora {
     animation: landing-aurora 14s ease-in-out infinite;
   }
+}
+
+@keyframes neural-fire {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  15%, 70% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes neural-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
 }
 
 @keyframes landing-rise {

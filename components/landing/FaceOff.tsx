@@ -48,10 +48,6 @@ export default function FaceOff() {
       </div>
       <div className="landing-orbit-reverse absolute inset-[12%] rounded-full border border-dashed border-graphite" />
 
-      {/* Role glows */}
-      <div className="landing-glow-defender absolute bottom-[14%] left-[10%] size-[42%] rounded-full bg-defender/25 blur-3xl" />
-      <div className="landing-glow-attacker absolute top-[10%] right-[10%] size-[42%] rounded-full bg-attacker/25 blur-3xl" />
-
       <svg viewBox="-40 -40 368 419" className="absolute inset-[16%] h-[68%] w-[68%] overflow-visible">
         <defs>
           <linearGradient id="landing-duel" x1="44.6" y1="294.3" x2="243.1" y2="44.6" gradientUnits="userSpaceOnUse">
