@@ -33,6 +33,7 @@ export function toExperiment(run: RunListItem): Experiment {
     currentTurn: run.turns_completed,
     totalTurns: run.max_turns,
     status: toStatus(run),
+    state: run.state,
     cost: formatCost(run.cost.total_usd),
     owner: run.owner_email ?? undefined,
   };

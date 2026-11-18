@@ -11,7 +11,9 @@ import {
   getRunJudgements,
   getRunResults,
   getRunTurns,
+  DELETABLE_STATES,
 } from "@/lib/api";
+import DeleteRunDialog from "@/components/runs/DeleteRunDialog";
 import { clearToken, getToken } from "@/lib/auth";
 import ChatBody from "./ChatBody";
 import ChatHeader from "./ChatHeader";
@@ -43,13 +45,21 @@ export default function ExperimentPage({ runId }: { runId: string }) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [admin, setAdmin] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
 
   useEffect(() => {
     const token = getToken();
     if (!token) return;
     getMe(token)
-      .then((me) => setAdmin(me.is_admin === true))
-      .catch(() => setAdmin(false));
+      .then((me) => {
+        setAdmin(me.is_admin === true);
+        setCanDelete(me.can_delete_runs === true);
+      })
+      .catch(() => {
+        setAdmin(false);
+        setCanDelete(false);
+      });
   }, []);
 
   const fetchRun = useCallback(
@@ -152,6 +162,11 @@ export default function ExperimentPage({ runId }: { runId: string }) {
               <Link href={`/experiment/${encodeURIComponent(runId)}/graph`}>Bar graph</Link>
             </Button>
             {admin ? <RenameRun runId={runId} name={view.name} onRenamed={refresh} /> : null}
+            {canDelete && DELETABLE_STATES.includes(view.state) ? (
+              <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
+                Delete
+              </Button>
+            ) : null}
             {view.live ? (
               <RunControls runId={runId} state={view.state} onChanged={refresh} />
             ) : (
@@ -161,6 +176,14 @@ export default function ExperimentPage({ runId }: { runId: string }) {
         }
       />
       <ChatBody view={view} />
+      <DeleteRunDialog
+        run={confirmDelete ? { id: runId, name: view.name } : null}
+        onClose={() => setConfirmDelete(false)}
+        onDeleted={() => {
+          clearTimeout(timer.current); // stop polling a run that no longer exists
+          router.replace("/dashboard");
+        }}
+      />
     </main>
   );
 }

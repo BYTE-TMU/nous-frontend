@@ -13,11 +13,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 const listRuns = vi.fn();
 const getMe = vi.fn();
 const getRunResults = vi.fn();
+const deleteRun = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/api")>()),
   listRuns: (...args: unknown[]) => listRuns(...args),
   getMe: (...args: unknown[]) => getMe(...args),
   getRunResults: (...args: unknown[]) => getRunResults(...args),
+  deleteRun: (...args: unknown[]) => deleteRun(...args),
 }));
 
 const run = (overrides: Partial<RunListItem> = {}): RunListItem => ({
@@ -211,5 +213,91 @@ describe("DashboardContent", () => {
     expect(await screen.findByText("Can't reach the server.")).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Refund test")).toBeInTheDocument();
+  });
+
+  describe("deleting a run", () => {
+    const deleter = { id: "u1", email: "a@example.com", is_admin: true, can_delete_runs: true };
+
+    beforeEach(() => {
+      window.localStorage.setItem("nous.access_token", "tok");
+    });
+
+    it("hides Delete from admins without delete permission", async () => {
+      getMe.mockResolvedValue({ ...deleter, can_delete_runs: false });
+      listRuns.mockResolvedValue([run({ state: "completed" })]);
+      render(<DashboardContent />);
+      expect(await screen.findByText("Refund test")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Delete Refund test" })).not.toBeInTheDocument();
+    });
+
+    it("hides Delete from non-admins", async () => {
+      listRuns.mockResolvedValue([run({ state: "completed" })]);
+      render(<DashboardContent />);
+      expect(await screen.findByText("Refund test")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Delete Refund test" })).not.toBeInTheDocument();
+    });
+
+    it("only offers Delete on runs that have finished or are paused", async () => {
+      getMe.mockResolvedValue(deleter);
+      listRuns.mockResolvedValue([
+        run({ name: "Running" }),
+        run({ run_id: "r2", name: "Paused", state: "paused" }),
+        run({ run_id: "r3", name: "Done", state: "completed" }),
+        run({ run_id: "r4", name: "Failed", state: "failed" }),
+      ]);
+      render(<DashboardContent />);
+      expect(await screen.findByText("Running")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Delete Running" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Delete Paused" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Delete Done" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Delete Failed" })).toBeInTheDocument();
+    });
+
+    it("does nothing when the confirmation is cancelled", async () => {
+      getMe.mockResolvedValue(deleter);
+      listRuns.mockResolvedValue([run({ state: "completed" })]);
+      render(<DashboardContent />);
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Delete Refund test" }));
+      const dialog = await screen.findByRole("dialog");
+      await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(deleteRun).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+      expect(screen.getByText("Refund test")).toBeInTheDocument();
+    });
+
+    it("deletes after confirming, naming the owner, then reloads the list", async () => {
+      getMe.mockResolvedValue(deleter);
+      listRuns
+        .mockResolvedValueOnce([run({ state: "completed", owner_email: "other@example.com" })])
+        .mockResolvedValue([]);
+      deleteRun.mockResolvedValue(undefined);
+      render(<DashboardContent />);
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Delete Refund test" }));
+      const dialog = await screen.findByRole("dialog");
+      expect(within(dialog).getByText(/belongs to other@example.com/)).toBeInTheDocument();
+      await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+      expect(deleteRun).toHaveBeenCalledWith("r1", "tok");
+      await waitFor(() => expect(screen.queryByText("Refund test")).not.toBeInTheDocument());
+      expect(listRuns).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("keeps the dialog open with a message when the backend refuses", async () => {
+      getMe.mockResolvedValue(deleter);
+      listRuns.mockResolvedValue([run({ state: "paused" })]);
+      deleteRun.mockRejectedValue(new ApiError(409, "active"));
+      render(<DashboardContent />);
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "Delete Refund test" }));
+      const dialog = await screen.findByRole("dialog");
+      await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        "This run is still going. Stop it before deleting.",
+      );
+      expect(listRuns).toHaveBeenCalledTimes(1);
+    });
   });
 });

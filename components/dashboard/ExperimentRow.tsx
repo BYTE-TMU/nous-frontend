@@ -6,19 +6,22 @@ import ArrowRight02Icon from "@hugeicons/core-free-icons/ArrowRight02Icon";
 import ExperimentStatus from "@/components/experiment/ExperimentStatus";
 import { Button } from "@/components/ui/Button";
 import type { Experiment } from "./ExperimentCard";
+import { DELETABLE_STATES } from "@/lib/api";
 
 export default function ExperimentRow({
   experiment,
   isLast,
+  onDelete,
 }: {
   experiment: Experiment;
   isLast?: boolean;
+  onDelete?: (experiment: Experiment) => void;
 }) {
   return (
     <Link
       href={`/experiment/${experiment.id}`}
       aria-label={`Open ${experiment.name}`}
-      className={`grid grid-cols-[180px_1fr_1fr_1fr_100px_140px_100px] items-center gap-4 border-x-2 border-b-2 border-border px-6 py-4 transition-colors hover:bg-muted ${isLast ? "rounded-b-2xl" : ""}`}
+      className={`grid grid-cols-[180px_1fr_1fr_1fr_100px_140px_100px_90px] items-center gap-4 border-x-2 border-b-2 border-border px-6 py-4 transition-colors hover:bg-muted ${isLast ? "rounded-b-2xl" : ""}`}
     >
       <div>
         <ExperimentStatus status={experiment.status} />
@@ -54,6 +57,23 @@ export default function ExperimentRow({
       <span className="text-sm">
         {experiment.currentTurn} / {experiment.totalTurns}
       </span>
+      <div className="flex justify-end">
+        {onDelete && DELETABLE_STATES.includes(experiment.state) ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="rounded-full"
+            aria-label={`Delete ${experiment.name}`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onDelete(experiment);
+            }}
+          >
+            Delete
+          </Button>
+        ) : null}
+      </div>
     </Link>
   );
 }

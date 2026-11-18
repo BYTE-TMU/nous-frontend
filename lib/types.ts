@@ -650,7 +650,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a run and its associated turn and judge records
-         * @description Only paused, completed, or failed runs can be deleted.
+         * @description Admins with delete permission only (403 otherwise). They can delete any user's run. Only paused, completed, or failed runs can be deleted.
          */
         delete: {
             parameters: {
@@ -665,6 +665,13 @@ export interface paths {
             responses: {
                 /** @description Run and associated records deleted */
                 204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Only admins with delete permission */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1192,6 +1199,8 @@ export interface components {
             email: string;
             /** @description Admins may list and read every user's runs (read-only). */
             is_admin: boolean;
+            /** @description Admins with this switched on may delete any user's paused, completed or failed runs. */
+            can_delete_runs?: boolean;
         };
         RunCreateRequest: {
             name: string;

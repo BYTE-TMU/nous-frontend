@@ -56,6 +56,8 @@ async function request<T>(
   if (!response.ok) {
     throw new ApiError(response.status, `Request failed with status ${response.status}`);
   }
+  // 204 No Content (e.g. delete) has no body to parse.
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
@@ -190,4 +192,12 @@ export function stopRun(runId: string, token: string | null): Promise<RunSummary
 /** Admin-only (403 otherwise). */
 export function renameRun(runId: string, name: string, token: string | null): Promise<RunSummary> {
   return request<RunSummary>(runPath(runId), { method: "PATCH", body: JSON.stringify({ name }) }, token);
+}
+
+/** States the backend lets you delete; anything else answers 409. */
+export const DELETABLE_STATES: RunSummary["state"][] = ["paused", "completed", "failed"];
+
+/** Admin-only with can_delete_runs perms (403 otherwise). Only paused, completed or failed runs (409 otherwise). */
+export function deleteRun(runId: string, token: string | null): Promise<void> {
+  return request<void>(runPath(runId), { method: "DELETE" }, token);
 }
