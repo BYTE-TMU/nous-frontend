@@ -2,8 +2,11 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import CircleIcon from "@hugeicons/core-free-icons/CircleIcon";
 import DiamondIcon from "@hugeicons/core-free-icons/DiamondIcon";
 import Loading03Icon from "@hugeicons/core-free-icons/Loading03Icon";
+import PauseIcon from "@hugeicons/core-free-icons/PauseIcon";
+import Square01Icon from "@hugeicons/core-free-icons/Square01Icon";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
+import type { RunListItem } from "@/lib/api";
 
 export enum ExperimentStatusEnum {
   IN_PROGRESS,
@@ -12,6 +15,35 @@ export enum ExperimentStatusEnum {
   HELD,
   /** A run with no outcome (it failed). */
   INCONCLUSIVE,
+  PENDING,
+  PAUSED,
+}
+
+/** Map backend run state (+ outcome when available) to a display status. */
+export function deriveStatus(state: RunListItem["state"], outcome?: string | null): ExperimentStatusEnum {
+  switch (state) {
+    case "pending":
+      return ExperimentStatusEnum.PENDING;
+    case "running":
+    case "stopping":
+      return ExperimentStatusEnum.IN_PROGRESS;
+    case "paused":
+      return ExperimentStatusEnum.PAUSED;
+    case "failed":
+      return ExperimentStatusEnum.INCONCLUSIVE;
+    case "completed":
+      switch (outcome) {
+        case "broke":
+          return ExperimentStatusEnum.BROKE;
+        case "held":
+          return ExperimentStatusEnum.HELD;
+        case "inconclusive":
+        default:
+          return ExperimentStatusEnum.INCONCLUSIVE;
+      }
+    default:
+      return ExperimentStatusEnum.IN_PROGRESS;
+  }
 }
 
 /**
@@ -58,6 +90,22 @@ const STATUS_CONFIG = {
     text: "text-status-inconclusive",
     border: "border-status-inconclusive",
     bg: "bg-status-inconclusive/10",
+    iconFill: "",
+  },
+  [ExperimentStatusEnum.PENDING]: {
+    label: "PENDING",
+    icon: Square01Icon,
+    text: "text-status-inconclusive",
+    border: "border-status-inconclusive",
+    bg: "bg-status-inconclusive/10",
+    iconFill: "",
+  },
+  [ExperimentStatusEnum.PAUSED]: {
+    label: "PAUSED",
+    icon: PauseIcon,
+    text: "text-amber-400",
+    border: "border-amber-400",
+    bg: "bg-amber-400/10",
     iconFill: "",
   },
 };

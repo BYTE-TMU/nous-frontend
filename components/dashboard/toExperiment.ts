@@ -1,17 +1,13 @@
-import { ExperimentStatusEnum } from "@/components/experiment/ExperimentStatus";
+import { ExperimentStatusEnum, deriveStatus } from "@/components/experiment/ExperimentStatus";
 import type { RunListItem } from "@/lib/api";
 import type { Experiment } from "./ExperimentCard";
 
 /**
- * The UI has three statuses; the backend has seven run states and no outcome in the
- * list response, so BROKE cannot be derived yet (BACKEND-ENDPOINTS.md Q1). Until it can:
- * a run that has not finished is IN PROGRESS, and a finished or failed one is
- * INCONCLUSIVE.
+ * Maps a backend run state to a display status using `deriveStatus`.
+ * Kept as a named export so existing tests can call it directly.
  */
 export function toStatus(state: RunListItem["state"]): ExperimentStatusEnum {
-  return state === "completed" || state === "failed"
-    ? ExperimentStatusEnum.INCONCLUSIVE
-    : ExperimentStatusEnum.IN_PROGRESS;
+  return deriveStatus(state);
 }
 
 /** "anthropic/claude-haiku-5.5" -> "claude-haiku-5.5" */
@@ -33,7 +29,7 @@ export function toExperiment(run: RunListItem): Experiment {
     }),
     currentTurn: run.turns_completed,
     totalTurns: run.max_turns,
-    status: toStatus(run.state),
+    status: deriveStatus(run.state),
     cost: formatCost(run.cost.total_usd),
   };
 }

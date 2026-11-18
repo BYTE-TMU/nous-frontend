@@ -1,13 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Search01Icon from "@hugeicons/core-free-icons/Search01Icon";
 import DashboardSquare01Icon from "@hugeicons/core-free-icons/DashboardSquare01Icon";
 import ListViewIcon from "@hugeicons/core-free-icons/ListViewIcon";
 import ChevronDownIcon from "@hugeicons/core-free-icons/ChevronDownIcon";
 import PlusSignCircleIcon from "@hugeicons/core-free-icons/PlusSignCircleIcon";
+import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
+import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon";
+import * as DropdownMenu from "radix-ui/dropdown-menu";
 import {
   Tabs,
   TabsList,
@@ -15,8 +18,10 @@ import {
   TabsContent,
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/Button";
-import { ApiError, listRuns } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { ApiError } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
+import { useRuns } from "@/lib/hooks";
 import { toExperiment } from "./toExperiment";
 import ExperimentCard, { type Experiment } from "./ExperimentCard";
 import ExperimentRow from "./ExperimentRow";
@@ -25,11 +30,23 @@ import { NewExperimentDialog } from "@/components/new-experiment/NewExperimentDi
 
 type ViewMode = "grid" | "list";
 
-type Load =
-  | { state: "loading" }
-  | { state: "signed-out" }
-  | { state: "error"; message: string }
-  | { state: "ready"; experiments: Experiment[] };
+const SORT_OPTIONS = [
+  { label: "Most recent", value: "-created_at" },
+  { label: "Oldest", value: "created_at" },
+  { label: "Name A-Z", value: "name" },
+  { label: "Name Z-A", value: "-name" },
+  { label: "Highest cost", value: "-cost" },
+  { label: "Most turns", value: "-turns_completed" },
+] as const;
+
+function useDebounce(value: string, delay: number): string {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
@@ -107,46 +124,43 @@ export default function DashboardContent() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [createOpen, setCreateOpen] = useState(false);
-  const [load, setLoad] = useState<Load>({ state: "loading" });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [sort, setSort] = useState("-created_at");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchRuns = useCallback(async () => {
-    const token = getToken();
-    if (!token) {
-      setLoad({ state: "signed-out" });
-      return;
-    }
-    setLoad({ state: "loading" });
-    try {
-      const runs = await listRuns(token);
-      setLoad({ state: "ready", experiments: runs.map(toExperiment) });
-    } catch (failure) {
-      if (failure instanceof ApiError && failure.status === 401) {
-        clearToken();
-        setLoad({ state: "signed-out" });
-        return;
-      }
-      setLoad({
-        state: "error",
-        message:
-          failure instanceof ApiError && failure.status === 0
-            ? "Can't reach the server."
-            : "Couldn't load your experiments.",
-      });
-    }
-  }, []);
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
+  const { data, isLoading, isError, error, refetch } = useRuns({
+    q: debouncedQuery || undefined,
+    sort,
+  });
+
+  const experiments = data?.map(toExperiment) ?? [];
+  const currentSortLabel =
+    SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "Most recent";
+
+  // Handle 401 → redirect to login
+  const is401 = isError && error instanceof ApiError && error.status === 401;
   useEffect(() => {
-    void fetchRuns();
-  }, [fetchRuns]);
+    if (is401) {
+      clearToken();
+      router.replace("/login");
+    }
+  }, [is401, router]);
 
-  // No token, or the backend said 401: this page has nothing to show a signed-out
-  // visitor, so send them to log in instead.
-  const signedOut = load.state === "signed-out";
+  // No token at all → redirect to login
+  const hasToken = typeof window !== "undefined" && !!getToken();
   useEffect(() => {
-    if (signedOut) router.replace("/login");
-  }, [signedOut, router]);
+    if (!hasToken) router.replace("/login");
+  }, [hasToken, router]);
 
-  if (signedOut) return null;
+  // Focus search input when opened
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  if (!hasToken || is401) return null;
 
   return (
     <Tabs defaultValue="all">
@@ -167,9 +181,32 @@ export default function DashboardContent() {
         </TabsList>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <HugeiconsIcon icon={Search01Icon} size={20} />
-          </Button>
+          {searchOpen ? (
+            <div className="flex items-center gap-1">
+              <HugeiconsIcon icon={Search01Icon} size={18} className="text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search experiments..."
+                className="h-8 w-48 text-sm"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setSearchOpen(false);
+                  setSearchQuery("");
+                }}
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={16} />
+              </Button>
+            </div>
+          ) : (
+            <Button variant="ghost" size="icon" aria-label="Search" onClick={() => setSearchOpen(true)}>
+              <HugeiconsIcon icon={Search01Icon} size={20} />
+            </Button>
+          )}
 
           <Button
             variant={viewMode === "grid" ? "default" : "outline"}
@@ -189,33 +226,94 @@ export default function DashboardContent() {
             <HugeiconsIcon icon={ListViewIcon} size={18} />
           </Button>
 
-          <Button variant="outline" className="rounded-full gap-2">
-            Most recent
-            <HugeiconsIcon icon={ChevronDownIcon} size={14} />
-          </Button>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <Button variant="outline" className="rounded-full gap-2">
+                {currentSortLabel}
+                <HugeiconsIcon icon={ChevronDownIcon} size={14} />
+              </Button>
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                align="end"
+                sideOffset={4}
+                className="z-50 min-w-[180px] rounded-lg border border-border bg-card p-1 shadow-lg"
+              >
+                <DropdownMenu.RadioGroup value={sort} onValueChange={setSort}>
+                  {SORT_OPTIONS.map((option) => (
+                    <DropdownMenu.RadioItem
+                      key={option.value}
+                      value={option.value}
+                      className="relative flex items-center rounded-md pl-7 pr-3 py-2 text-sm text-muted-foreground outline-none transition-colors cursor-default select-none data-[highlighted]:bg-muted data-[highlighted]:text-foreground data-[state=checked]:text-foreground data-[state=checked]:font-medium"
+                    >
+                      <DropdownMenu.ItemIndicator className="absolute left-2">
+                        <HugeiconsIcon icon={Tick02Icon} size={14} />
+                      </DropdownMenu.ItemIndicator>
+                      {option.label}
+                    </DropdownMenu.RadioItem>
+                  ))}
+                </DropdownMenu.RadioGroup>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
         </div>
       </div>
 
       <div className="px-6 pb-6">
         <TabsContent value="all">
-          {load.state === "loading" && <Notice>Loading experiments…</Notice>}
-          {load.state === "error" && (
+          {isLoading && <Notice>Loading experiments…</Notice>}
+          {isError && !is401 && (
             <Notice>
-              <p>{load.message}</p>
-              <Button variant="outline" onClick={() => void fetchRuns()}>
+              <p>
+                {error instanceof ApiError && error.status === 0
+                  ? "Can't reach the server."
+                  : "Couldn't load your experiments."}
+              </p>
+              <Button variant="outline" onClick={() => refetch()}>
                 Try again
               </Button>
             </Notice>
           )}
-          {load.state === "ready" &&
+          {!isLoading && !isError && experiments.length === 0 && (
+            <>
+              <Notice>
+                <p>{debouncedQuery ? "No matching experiments" : "No experiments yet"}</p>
+                {debouncedQuery && (
+                  <p className="text-sm">Try a different search term</p>
+                )}
+              </Notice>
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-4 gap-6">
+                  <CreateExperimentCard onClick={() => setCreateOpen(true)} />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(true)}
+                  className="flex w-full items-center gap-4 rounded-2xl border-2 border-border px-6 py-4 text-left cursor-pointer hover:bg-muted transition-colors"
+                >
+                  <HugeiconsIcon
+                    icon={PlusSignCircleIcon}
+                    size={32}
+                    className="text-muted-foreground"
+                  />
+                  <span className="text-base font-medium text-muted-foreground">
+                    Create new experiment
+                  </span>
+                </button>
+              )}
+            </>
+          )}
+          {!isLoading && !isError && experiments.length > 0 &&
             (viewMode === "grid" ? (
               <ExperimentGrid
-                experiments={load.experiments}
+                experiments={experiments}
                 onCreate={() => setCreateOpen(true)}
               />
             ) : (
               <ExperimentList
-                experiments={load.experiments}
+                experiments={experiments}
                 onCreate={() => setCreateOpen(true)}
               />
             ))}

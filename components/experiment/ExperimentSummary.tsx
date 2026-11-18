@@ -18,6 +18,8 @@ const STATUS_LABEL = {
   [ExperimentStatusEnum.BROKE]: "broke",
   [ExperimentStatusEnum.HELD]: "held",
   [ExperimentStatusEnum.INCONCLUSIVE]: "inconclusive",
+  [ExperimentStatusEnum.PENDING]: "pending",
+  [ExperimentStatusEnum.PAUSED]: "paused",
 };
 
 /** Not in the mockups: a paused or stopping run is live but not running. */
