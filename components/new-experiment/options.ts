@@ -17,8 +17,8 @@ export type Suggestion = {
   target: "attacker" | "defender";
 };
 
-/** Turns per run. The backend's hard cap is 30; the design has no control for it. */
-export const MAX_TURNS = 30;
+/** Turns per run. The backend's hard cap is 20; the design has no control for it. */
+export const MAX_TURNS = 20;
 
 export const SUGGESTIONS: Suggestion[] = [
   {
