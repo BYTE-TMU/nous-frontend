@@ -138,9 +138,14 @@ export type RunListItem = Schemas["RunListItem"];
  *  `all` is admin-only (403 otherwise) and lists every user's runs. */
 export async function listRuns(
   token: string | null,
-  options?: { all?: boolean },
+  options?: { all?: boolean; q?: string; sort?: string },
 ): Promise<RunListItem[]> {
-  const path = options?.all ? "/runs?all=true" : "/runs";
+  const searchParams = new URLSearchParams();
+  if (options?.all) searchParams.set("all", "true");
+  if (options?.q) searchParams.set("q", options.q);
+  if (options?.sort) searchParams.set("sort", options.sort);
+  const query = searchParams.toString();
+  const path = `/runs${query ? `?${query}` : ""}`;
   const response = await request<Schemas["RunListResponse"]>(path, { method: "GET" }, token);
   return response.items;
 }
