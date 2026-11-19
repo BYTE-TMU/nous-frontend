@@ -48,7 +48,7 @@ function phaseOf(turn: DemoTurn, step: number): number {
  */
 function Thought({ text, align, defaultOpen }: { text: string; align: "start" | "end"; defaultOpen: boolean }) {
   return (
-    <Trace className={cn("max-w-[80%]", align === "end" ? "self-end pr-16" : "pl-16")}>
+    <Trace className={cn("max-w-full sm:max-w-[80%]", align === "end" ? "self-end pr-14 sm:pr-16" : "pl-14 sm:pl-16")}>
       <TraceCollapsible defaultOpen={defaultOpen}>
         <TraceCollapsibleTrigger className={cn("text-[13px]", align === "end" && "self-end")}>
           <TraceLine>
@@ -72,7 +72,7 @@ function DemoTurnView({ turn, phase }: { turn: DemoTurn; phase: number }) {
   return (
     <section aria-label={`Turn ${turn.number}`} className="landing-turn-in flex flex-col gap-6">
       <TurnMarker number={turn.number} />
-      <MessageGroup className="gap-3">
+      <MessageGroup className="gap-3 [&_[data-slot=bubble-content]]:text-base sm:[&_[data-slot=bubble-content]]:text-xl">
         <TranscriptMessageView
           role="attacker"
           model={ATTACKER_MODEL}
@@ -114,7 +114,7 @@ function RunPanel({ step, onReplay }: { step: number; onReplay: () => void }) {
   const judgedTurns = DEMO_TURNS.filter((t) => step >= 0 && phaseOf(t, step) >= 3);
   const peak = judgedTurns.reduce((max, t) => Math.max(max, t.score), -1);
   const done = step >= LAST_STEP;
-  const broke = judgedTurns.find((t) => t.score === 5);
+  const broke = judgedTurns.find((t) => t.score === 2);
   const currentTurn = step < 0 ? 0 : Math.min(DEMO_TURNS.length, Math.floor(step / PHASES) + 1);
 
   return (
@@ -157,7 +157,7 @@ function RunPanel({ step, onReplay }: { step: number; onReplay: () => void }) {
         <dt className="flex items-center gap-2 text-smoke">
           <span className="size-2 rounded-full bg-judge" /> Judge
         </dt>
-        <dd className="text-right font-mono text-ash">0–5 rubric</dd>
+        <dd className="text-right font-mono text-ash">0–2 rubric</dd>
       </dl>
 
       <div>
@@ -167,15 +167,18 @@ function RunPanel({ step, onReplay }: { step: number; onReplay: () => void }) {
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-carbon">
           <div
-            className="h-full rounded-full bg-gradient-duel transition-[width] duration-700 ease-out"
-            style={{ width: `${(Math.max(0, step + 1) / (LAST_STEP + 1)) * 100}%` }}
+            className="h-full rounded-full transition-[clip-path] duration-700 ease-out"
+            style={{
+              background: "linear-gradient(90deg, var(--color-blue-freeze) 0%, var(--color-blue-freeze) 30%, var(--color-index-3) 50%, var(--color-index-3) 70%, var(--color-status-broke) 90%, var(--color-status-broke) 100%)",
+              clipPath: `inset(0 ${100 - (Math.max(0, step + 1) / (LAST_STEP + 1)) * 100}% 0 0)`,
+            }}
           />
         </div>
       </div>
 
       <div>
         <p className="mb-3 font-mono text-xs tracking-[0.14em] text-smoke">JUDGE · PEAK SCORE</p>
-        <div className="grid grid-cols-6 gap-1.5" aria-label={peak < 0 ? "No turns judged yet" : `Peak score ${peak} of 5`}>
+        <div className="grid grid-cols-3 gap-1.5" aria-label={peak < 0 ? "No turns judged yet" : `Peak score ${peak} of 2`}>
           {RUBRIC.map((level) => (
             <div key={level.score} className="flex flex-col items-center gap-1.5">
               <div
@@ -284,12 +287,14 @@ export default function DuelDemo() {
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-night to-transparent" />
         <div
           ref={scrollRef}
-          className="h-[560px] overflow-y-auto overscroll-contain px-4 py-6 sm:px-8 sm:py-8 lg:h-[700px]"
+          className="h-[min(560px,70svh)] overflow-y-auto overscroll-contain px-4 py-6 sm:px-8 sm:py-8 lg:h-[700px]"
           aria-live="polite"
           aria-busy={step >= 0 && step < LAST_STEP}
         >
           <div className="flex flex-col gap-10">
-            <RuleBanner rule={DEMO_RULE} />
+            <div className="[&>p]:text-base sm:[&>p]:text-xl">
+              <RuleBanner rule={DEMO_RULE} />
+            </div>
             {DEMO_TURNS.filter((t) => step >= (t.number - 1) * PHASES).map((t) => (
               <DemoTurnView key={t.number} turn={t} phase={phaseOf(t, step)} />
             ))}

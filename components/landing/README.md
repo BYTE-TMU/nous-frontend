@@ -19,17 +19,18 @@ Sections of the landing page, their static copy (`content.ts`), and small motion
 | File | Purpose |
 |---|---|
 | `LandingPage.tsx` | composes the page in story order; rendered by `app/page.tsx` |
-| `content.ts` | all copy and data: rubric levels (verbatim from `nous-ai/eval/judgement_rubric.md`), persona rules (from `nous-ai/app/prompts/README.md`), the scripted demo, principles |
+| `content.ts` | rubric levels, the scripted demo, and principles |
 | `LandingNav.tsx` | sticky nav; shows "Open dashboard" when a token exists |
-| `Hero.tsx`, `FaceOff.tsx` | headline, CTAs, rubric ticker; the animated brandmark (attacker vs defender, judge orbit) |
+| `NeuralOpening.tsx` | black opening with an animated, replayable Greek word reveal |
+| `Hero.tsx` | centered headline and CTAs |
 | `DuelDemo.tsx` | section 01: scripted run played through the real `components/transcript/` components |
-| `BreakMeter.tsx` | section 02: the 0–5 rubric as a keyboard-accessible staircase |
-| `HowItWorks.tsx`, `Personas.tsx`, `Principles.tsx` | sections 03–05 |
+| `BreakMeter.tsx` | the keyboard-accessible 0–2 rubric |
+| `HowItWorks.tsx`, `Principles.tsx` | responsive workflow diagram and research principles |
 | `ClosingCta.tsx`, `LandingFooter.tsx` | closing request-access panel and footer |
 | `SectionHeading.tsx`, `Reveal.tsx`, `hooks.ts` | shared heading, scroll-reveal wrapper, `useInView` / `usePrefersReducedMotion` |
 
 ## Rules
 
-- Keep `content.ts` in sync with the rubric and persona files in `nous-ai` when they change.
+- Keep rubric content in sync with `nous-ai/eval/judgement_rubric.md`.
 - Motion lives in the "Landing page" block at the bottom of `app/globals.css`, gated on `prefers-reduced-motion: no-preference`. Reduced-motion viewers get the finished, static page.
 - The demo must stay labelled as illustrative. Never present scripted text as model output.
