@@ -9,6 +9,7 @@ import ExperimentStatus, {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { DELETABLE_STATES, type RunListItem } from "@/lib/api";
+import RunProgress, { type ProgressData } from "./RunProgress";
 
 export interface Experiment {
   id: string;
@@ -26,13 +27,6 @@ export interface Experiment {
   owner?: string;
 }
 
-const STATUS_GRADIENT = {
-  [ExperimentStatusEnum.IN_PROGRESS]: "from-status-in-progress/15",
-  [ExperimentStatusEnum.BROKE]: "from-status-broke/15",
-  [ExperimentStatusEnum.HELD]: "from-impact-green/15",
-  [ExperimentStatusEnum.INCONCLUSIVE]: "from-status-inconclusive/15",
-};
-
 const STATUS_BORDER = {
   [ExperimentStatusEnum.IN_PROGRESS]: "hover:border-status-in-progress focus-visible:border-status-in-progress",
   [ExperimentStatusEnum.BROKE]: "hover:border-fox-red focus-visible:border-fox-red",
@@ -40,18 +34,13 @@ const STATUS_BORDER = {
   [ExperimentStatusEnum.INCONCLUSIVE]: "hover:border-ash focus-visible:border-ash",
 };
 
-const STATUS_PROGRESS = {
-  [ExperimentStatusEnum.IN_PROGRESS]: "bg-gradient-duel",
-  [ExperimentStatusEnum.BROKE]: "bg-fox-red",
-  [ExperimentStatusEnum.HELD]: "bg-impact-green",
-  [ExperimentStatusEnum.INCONCLUSIVE]: "bg-ash",
-};
-
 export default function ExperimentCard({
   experiment,
+  progress,
   onDelete,
 }: {
   experiment: Experiment;
+  progress?: ProgressData;
   onDelete?: (experiment: Experiment) => void;
 }) {
   return (
@@ -59,8 +48,7 @@ export default function ExperimentCard({
       href={`/experiment/${experiment.id}`}
       aria-label={`Open ${experiment.name}`}
       className={cn(
-        "flex min-w-0 flex-col rounded-[2rem] border border-border bg-card bg-gradient-to-br via-card to-card p-6 transition-colors",
-        STATUS_GRADIENT[experiment.status],
+        "flex min-w-0 flex-col rounded-[2rem] border border-border bg-carbon p-6 transition-colors",
         STATUS_BORDER[experiment.status],
       )}
     >
@@ -96,18 +84,7 @@ export default function ExperimentCard({
       ) : null}
 
       <div className="mt-auto pt-2">
-        {experiment.totalTurns > 0 && (
-          <div
-            role="progressbar"
-            aria-label="Completed turns"
-            aria-valuemin={0}
-            aria-valuemax={experiment.totalTurns}
-            aria-valuenow={Math.max(0, Math.min(experiment.currentTurn, experiment.totalTurns))}
-            className="h-1 w-full overflow-hidden rounded-full bg-graphite"
-          >
-            <div className={cn("h-full rounded-full", STATUS_PROGRESS[experiment.status])} style={{ width: `${Math.max(0, Math.min(experiment.currentTurn / experiment.totalTurns, 1)) * 100}%` }} />
-          </div>
-        )}
+        <RunProgress completed={experiment.currentTurn} total={experiment.totalTurns} progress={progress} />
         <div className="mt-3 flex items-center justify-between gap-2 font-mono text-xs">
           <span className="text-muted-foreground">{experiment.date}</span>
           <div className="flex items-center gap-2">

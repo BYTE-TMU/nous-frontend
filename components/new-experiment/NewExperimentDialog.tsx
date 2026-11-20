@@ -9,7 +9,7 @@ import { getToken } from "../../lib/auth";
 import { buildRunRequest } from "./buildRunRequest";
 import { estimatedTokens } from "./cost";
 import { ModelCard } from "./ModelCard";
-import { MAX_TURNS, SUGGESTIONS, type Suggestion } from "./options";
+import { MAX_TURNS } from "./options";
 import { PromptField } from "./PromptField";
 import { emptyForm, type ExperimentForm } from "./types";
 import { useCatalog } from "./useCatalog";
@@ -34,7 +34,7 @@ function describeFailure(error: unknown): string {
 }
 
 // The only place a run gets created, laid out as the single-screen popup in the
-// design: name, both models, both prompts, suggestions, then cost and Create.
+// design: name, both models, both prompts, then cost and Create.
 // Closing the dialog throws the form away, as the X does in the design.
 export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogProps) {
   const router = useRouter();
@@ -62,12 +62,6 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
       setError("");
     }
     onOpenChange(next);
-  }
-
-  // A suggestion fills its prompt as custom text, which the tester can then edit.
-  function applySuggestion({ target, text }: Suggestion) {
-    const key = target === "attacker" ? "attackerPrompt" : "defenderPrompt";
-    update({ [key]: { ...form[key], mode: "custom", custom: text } });
   }
 
   async function submit() {
@@ -173,25 +167,6 @@ export function NewExperimentDialog({ open, onOpenChange }: NewExperimentDialogP
               />
             </div>
 
-            <div className="flex flex-col gap-3">
-              <h3 className={sectionLabel}>Suggestions</h3>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {SUGGESTIONS.map((suggestion) => (
-                  <button
-                    key={suggestion.id}
-                    type="button"
-                    onClick={() => applySuggestion(suggestion)}
-                    className="flex min-h-[96px] cursor-pointer flex-col items-start gap-1.5 rounded-[14px] border-[1.5px] border-graphite bg-ink p-3 text-left outline-none transition-colors hover:border-signal-lime/60 focus-visible:border-signal-lime"
-                  >
-                    <span className="rounded-xl border border-signal-lime bg-signal-lime/20 px-2 py-0.5 font-mono text-[10px] font-medium text-signal-lime uppercase">
-                      {suggestion.target} prompt
-                    </span>
-                    <span className="text-sm font-semibold text-white">{suggestion.title}</span>
-                    <span className="text-xs leading-[1.4] text-ash">{suggestion.text}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           {error ? (

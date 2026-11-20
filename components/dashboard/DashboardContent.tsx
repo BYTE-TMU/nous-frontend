@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
-import { ApiError, getMe, listRuns } from "@/lib/api";
+import { ApiError, getMe, listRuns, type RunListItem } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
 import { toExperiment } from "./toExperiment";
 import ExperimentCard, { type Experiment } from "./ExperimentCard";
@@ -28,6 +28,8 @@ import CreateExperimentCard from "./CreateExperimentCard";
 import { NewExperimentDialog } from "@/components/new-experiment/NewExperimentDialog";
 import BarGraphPage from "@/components/graph/BarGraphPage";
 import DeleteRunDialog from "@/components/runs/DeleteRunDialog";
+import { loadGraphRun } from "@/components/graph/graphData";
+import type { ProgressData } from "./RunProgress";
 
 type ViewMode = "grid" | "list";
 
@@ -44,7 +46,7 @@ type Load =
   | { state: "loading" }
   | { state: "signed-out" }
   | { state: "error"; message: string }
-  | { state: "ready"; experiments: Experiment[] };
+  | { state: "ready"; runs: RunListItem[] };
 
 function useDebounce(value: string, delay: number): string {
   const [debounced, setDebounced] = useState(value);
@@ -65,10 +67,12 @@ function Notice({ children }: { children: React.ReactNode }) {
 
 function ExperimentGrid({
   experiments,
+  progress,
   onCreate,
   onDelete,
 }: {
   experiments: Experiment[];
+  progress: Record<string, ProgressData>;
   onCreate: () => void;
   onDelete?: (experiment: Experiment) => void;
 }) {
@@ -76,7 +80,7 @@ function ExperimentGrid({
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
       <CreateExperimentCard onClick={onCreate} />
       {experiments.map((exp) => (
-        <ExperimentCard key={exp.id} experiment={exp} onDelete={onDelete} />
+        <ExperimentCard key={exp.id} experiment={exp} progress={progress[exp.id]} onDelete={onDelete} />
       ))}
     </div>
   );
@@ -84,10 +88,12 @@ function ExperimentGrid({
 
 function ExperimentList({
   experiments,
+  progress,
   onCreate,
   onDelete,
 }: {
   experiments: Experiment[];
+  progress: Record<string, ProgressData>;
   onCreate: () => void;
   onDelete?: (experiment: Experiment) => void;
 }) {
@@ -125,6 +131,7 @@ function ExperimentList({
         <ExperimentRow
           key={exp.id}
           experiment={exp}
+          progress={progress[exp.id]}
           isLast={i === experiments.length - 1}
           onDelete={onDelete}
         />
@@ -148,6 +155,8 @@ export default function DashboardContent() {
   const [sort, setSort] = useState("-created_at");
   const [canDelete, setCanDelete] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Experiment | null>(null);
+  const [progress, setProgress] = useState<Record<string, ProgressData>>({});
+  const [progressRetry, setProgressRetry] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounce(searchQuery, 300);
   const onDelete = canDelete ? setPendingDelete : undefined;
@@ -204,7 +213,7 @@ export default function DashboardContent() {
       : listRuns(token);
     void runsRequest
       .then((runs) => {
-        if (!cancelled) setLoad({ state: "ready", experiments: runs.map(toExperiment) });
+        if (!cancelled) setLoad({ state: "ready", runs });
       })
       .catch((failure: unknown) => {
         if (cancelled) return;
@@ -222,6 +231,41 @@ export default function DashboardContent() {
       });
     return () => { cancelled = true; };
   }, [isAdmin, allUsers, debouncedQuery, sort, runsRetry]);
+
+  useEffect(() => {
+    if (load.state !== "ready" || tab !== "all") return;
+    const token = getToken();
+    if (!token) {
+      setLoad({ state: "signed-out" });
+      return;
+    }
+    let cancelled = false;
+    const runs = load.runs.filter((run) => run.turns_completed > 0);
+    setProgress(Object.fromEntries(runs.map((run) => [run.run_id, { state: "loading" }])));
+    async function fetchProgress(accessToken: string) {
+      for (let index = 0; index < runs.length && !cancelled; index += 5) {
+        await Promise.all(runs.slice(index, index + 5).map(async (run) => {
+          try {
+            const result = await loadGraphRun(run, accessToken);
+            if (!cancelled) {
+              setProgress((current) => ({ ...current, [run.run_id]: { state: "ready", turns: result.turns } }));
+            }
+          } catch (error) {
+            if (cancelled) return;
+            if (error instanceof ApiError && error.status === 401) {
+              cancelled = true;
+              clearToken();
+              setLoad({ state: "signed-out" });
+            } else {
+              setProgress((current) => ({ ...current, [run.run_id]: { state: "error" } }));
+            }
+          }
+        }));
+      }
+    }
+    void fetchProgress(token);
+    return () => { cancelled = true; };
+  }, [load, tab, progressRetry]);
 
   const retry = useCallback(() => {
     if (isAdmin === null) setAccountRetry((value) => value + 1);
@@ -261,20 +305,18 @@ export default function DashboardContent() {
 
         <div className="flex flex-wrap items-center gap-2">
           {isAdmin && (
-            <label>
-              <span className="sr-only">Run owner</span>
-              <select
-                value={allUsers ? "all" : "own"}
-                onChange={(event) => {
-                  setLoad({ state: "loading" });
-                  setAllUsers(event.target.value === "all");
-                }}
-                className="min-h-10 rounded-full border border-border bg-carbon px-4 text-sm text-white"
-              >
-                <option value="all">All users</option>
-                <option value="own">Your runs</option>
-              </select>
-            </label>
+            <Button
+              type="button"
+              variant={allUsers ? "default" : "outline"}
+              className="rounded-full"
+              aria-pressed={allUsers}
+              onClick={() => {
+                setLoad({ state: "loading" });
+                setAllUsers((value) => !value);
+              }}
+            >
+              Admin view
+            </Button>
           )}
           {tab === "all" && <>
           {searchOpen ? (
@@ -309,6 +351,8 @@ export default function DashboardContent() {
           <Button
             variant={viewMode === "grid" ? "default" : "outline"}
             size="icon"
+            aria-label="Grid view"
+            aria-pressed={viewMode === "grid"}
             className="rounded-full"
             onClick={() => setViewMode("grid")}
           >
@@ -318,6 +362,8 @@ export default function DashboardContent() {
           <Button
             variant={viewMode === "list" ? "default" : "outline"}
             size="icon"
+            aria-label="List view"
+            aria-pressed={viewMode === "list"}
             className="rounded-full"
             onClick={() => setViewMode("list")}
           >
@@ -369,8 +415,16 @@ export default function DashboardContent() {
               </Button>
             </Notice>
           )}
+          {load.state === "ready" && Object.values(progress).some((item) => item.state === "error") && (
+            <div role="alert" className="mb-4 flex flex-wrap items-center gap-3 text-sm text-ash">
+              Some judge scores could not be loaded.
+              <Button variant="outline" size="sm" onClick={() => setProgressRetry((value) => value + 1)}>
+                Retry scores
+              </Button>
+            </div>
+          )}
           {load.state === "ready" && (
-            load.experiments.length === 0 ? (
+            load.runs.length === 0 ? (
               <>
                 <Notice>
                   <p>{debouncedQuery ? "No matching experiments" : "No experiments yet"}</p>
@@ -383,13 +437,15 @@ export default function DashboardContent() {
             ) : load.state === "ready" &&
             (viewMode === "grid" ? (
               <ExperimentGrid
-                experiments={load.experiments}
+                experiments={load.runs.map(toExperiment)}
+                progress={progress}
                 onCreate={() => setCreateOpen(true)}
                 onDelete={onDelete}
               />
             ) : (
               <ExperimentList
-                experiments={load.experiments}
+                experiments={load.runs.map(toExperiment)}
+                progress={progress}
                 onCreate={() => setCreateOpen(true)}
                 onDelete={onDelete}
               />

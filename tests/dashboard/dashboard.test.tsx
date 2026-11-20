@@ -13,12 +13,16 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 const listRuns = vi.fn();
 const getMe = vi.fn();
 const getRunResults = vi.fn();
+const getRunTurns = vi.fn();
+const getRunJudgements = vi.fn();
 const deleteRun = vi.fn();
 vi.mock("../../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/api")>()),
   listRuns: (...args: unknown[]) => listRuns(...args),
   getMe: (...args: unknown[]) => getMe(...args),
   getRunResults: (...args: unknown[]) => getRunResults(...args),
+  getRunTurns: (...args: unknown[]) => getRunTurns(...args),
+  getRunJudgements: (...args: unknown[]) => getRunJudgements(...args),
   deleteRun: (...args: unknown[]) => deleteRun(...args),
 }));
 
@@ -76,6 +80,9 @@ describe("DashboardContent", () => {
     vi.clearAllMocks();
     window.localStorage.clear();
     getMe.mockResolvedValue({ id: "u1", email: "u@example.com", is_admin: false });
+    getRunResults.mockReset().mockResolvedValue({ per_turn: [], outcome: "held", break_turn: null });
+    getRunTurns.mockReset().mockResolvedValue([]);
+    getRunJudgements.mockReset().mockResolvedValue({ judgements: [] });
   });
 
   it("defaults admins to all users and applies Your runs in the dashboard and comparison", async () => {
@@ -95,14 +102,16 @@ describe("DashboardContent", () => {
     expect(await screen.findByText("by other@example.com")).toBeInTheDocument();
     expect(listRuns).toHaveBeenLastCalledWith("tok", { all: true });
     const user = userEvent.setup();
-    await user.selectOptions(screen.getByLabelText("Run owner"), "own");
+    const adminView = screen.getByRole("button", { name: "Admin view" });
+    expect(adminView).toHaveAttribute("aria-pressed", "true");
+    await user.click(adminView);
     expect(await screen.findByText("My run")).toBeInTheDocument();
     expect(screen.queryByText("Other run")).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Compare" }));
     expect(await screen.findByRole("button", { name: /My run, turn 1: Held/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Other run, turn/ })).not.toBeInTheDocument();
     expect(listRuns).toHaveBeenLastCalledWith("tok");
-    await user.selectOptions(screen.getByLabelText("Run owner"), "all");
+    await user.click(adminView);
     expect(await screen.findByRole("button", { name: /Other run, turn 1: Held/ })).toBeInTheDocument();
     expect(listRuns).toHaveBeenLastCalledWith("tok", { all: true });
     expect(screen.getByText("Showing runs from all users.")).toBeInTheDocument();
@@ -113,7 +122,7 @@ describe("DashboardContent", () => {
     listRuns.mockResolvedValue([run()]);
     render(<DashboardContent />);
     expect(await screen.findByText("Refund test")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Run owner")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Admin view" })).not.toBeInTheDocument();
   });
 
   it("sends the user to /login, without calling the backend, when there is no token", async () => {
@@ -162,7 +171,7 @@ describe("DashboardContent", () => {
     expect(listRuns).toHaveBeenLastCalledWith("tok");
   });
 
-  it("uses each status colour for the card background while keeping a neutral border", async () => {
+  it("uses solid neutral card backgrounds regardless of status", async () => {
     window.localStorage.setItem("nous.access_token", "tok");
     listRuns.mockResolvedValue([
       run({ name: "Running" }),
@@ -172,11 +181,84 @@ describe("DashboardContent", () => {
     ]);
     render(<DashboardContent />);
     const running = await screen.findByRole("link", { name: "Open Running" });
-    expect(running).toHaveClass("from-status-in-progress/15", "border-border");
-    expect(screen.getByRole("link", { name: "Open Held" })).toHaveClass("from-impact-green/15", "border-border");
-    expect(screen.getByRole("link", { name: "Open Broke" })).toHaveClass("from-status-broke/15", "border-border");
-    expect(screen.getByRole("link", { name: "Open Failed" })).toHaveClass("from-status-inconclusive/15", "border-border");
+    for (const name of ["Running", "Held", "Broke", "Failed"]) {
+      expect(screen.getByRole("link", { name: `Open ${name}` })).toHaveClass("bg-carbon", "border-border");
+      expect(screen.getByRole("link", { name: `Open ${name}` })).not.toHaveClass("bg-gradient-to-br");
+    }
     expect(within(running).getByRole("progressbar", { name: "Completed turns" })).toHaveAttribute("aria-valuenow", "3");
+  });
+
+  it("shows actual per-turn scores in card and list progress and colors model tags", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    listRuns.mockResolvedValue([run({ state: "completed", turns_completed: 4 })]);
+    getRunResults.mockResolvedValue({
+      outcome: "broke", break_turn: 3,
+      per_turn: [
+        { turn: 1, classification: 0 },
+        { turn: 2, classification: 1 },
+        { turn: 3, classification: 2 },
+        { turn: 4, classification: 0 },
+      ],
+    });
+    render(<DashboardContent />);
+    const card = await screen.findByRole("link", { name: "Open Refund test" });
+    await waitFor(() => expect(within(card).getByRole("progressbar")).toHaveAttribute(
+      "aria-valuetext", "4 of 10 turns. Turn 1: Held, Turn 2: Softened, Turn 3: Broke, Turn 4: Held",
+    ));
+    const segments = within(card).getByRole("progressbar").querySelectorAll("span");
+    expect(segments[0]).toHaveStyle("background: linear-gradient(to right, var(--color-impact-green), var(--color-index-3))");
+    expect(segments[2]).toHaveStyle("background: linear-gradient(to right, var(--color-index-6), var(--color-impact-green))");
+    await userEvent.setup().click(screen.getByRole("button", { name: "List view" }));
+    const row = screen.getByRole("link", { name: "Open Refund test" });
+    expect(within(row).getByText("claude-haiku-5.5")).toHaveClass("text-fox-red");
+    expect(within(row).getByText("claude-opus-5.5")).toHaveClass("text-blue-freeze");
+    expect(within(row).getByRole("progressbar")).toHaveAttribute(
+      "aria-valuetext", "4 of 10 turns. Turn 1: Held, Turn 2: Softened, Turn 3: Broke, Turn 4: Held",
+    );
+  });
+
+  it("uses live judgements and marks missing scores as unjudged", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    listRuns.mockResolvedValue([run({ turns_completed: 2 })]);
+    getRunTurns.mockResolvedValue([
+      { speaker: "attacker", turn_number: 1, text: "First" },
+      { speaker: "defender", turn_number: 2, text: "Reply" },
+      { speaker: "attacker", turn_number: 3, text: "Second" },
+      { speaker: "defender", turn_number: 4, text: "Reply" },
+    ]);
+    getRunJudgements.mockResolvedValue({
+      judgements: [{ turn_number: 2, status: "completed", score: 1, explanation: "" }],
+    });
+    render(<DashboardContent />);
+    await waitFor(() => expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuetext", "2 of 10 turns. Turn 1: Softened, Turn 2: Unjudged",
+    ));
+    expect(getRunTurns).toHaveBeenCalledWith("r1", "tok");
+    expect(getRunJudgements).toHaveBeenCalledWith("r1", "tok");
+  });
+
+  it("reports score loading failures and retries without losing the run list", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    listRuns.mockResolvedValue([run({ state: "completed", turns_completed: 1 })]);
+    getRunResults.mockRejectedValueOnce(new ApiError(0, "offline")).mockResolvedValue({
+      outcome: "held", break_turn: null, per_turn: [{ turn: 1, classification: 0 }],
+    });
+    render(<DashboardContent />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Some judge scores could not be loaded.");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Retry scores" }));
+    await waitFor(() => expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuetext", "1 of 10 turns. Turn 1: Held",
+    ));
+    expect(listRuns).toHaveBeenCalledTimes(1);
+  });
+
+  it("signs out if a score request finds an expired session", async () => {
+    window.localStorage.setItem("nous.access_token", "tok");
+    listRuns.mockResolvedValue([run({ state: "completed", turns_completed: 1 })]);
+    getRunResults.mockRejectedValue(new ApiError(401, "expired"));
+    render(<DashboardContent />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    expect(window.localStorage.getItem("nous.access_token")).toBeNull();
   });
 
   it("shows a retryable error if account permissions cannot be determined", async () => {

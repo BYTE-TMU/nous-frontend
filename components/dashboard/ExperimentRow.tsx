@@ -7,13 +7,16 @@ import ExperimentStatus from "@/components/experiment/ExperimentStatus";
 import { Button } from "@/components/ui/Button";
 import type { Experiment } from "./ExperimentCard";
 import { DELETABLE_STATES } from "@/lib/api";
+import RunProgress, { type ProgressData } from "./RunProgress";
 
 export default function ExperimentRow({
   experiment,
+  progress,
   isLast,
   onDelete,
 }: {
   experiment: Experiment;
+  progress?: ProgressData;
   isLast?: boolean;
   onDelete?: (experiment: Experiment) => void;
 }) {
@@ -29,17 +32,17 @@ export default function ExperimentRow({
 
       <p className="text-base font-bold truncate">{experiment.name}</p>
 
-      <div className="flex items-center gap-2">
-        <span className="rounded-full border border-border px-3 py-1 text-sm font-medium">
-          {experiment.attacker}
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="max-w-full break-all rounded-full border border-fox-red px-3 py-1 text-xs text-fox-red">
+          <span aria-hidden="true">● </span>{experiment.attacker}
         </span>
         <HugeiconsIcon
           icon={ArrowRight02Icon}
           size={16}
           className="shrink-0 text-muted-foreground"
         />
-        <span className="rounded-full border border-border px-3 py-1 text-sm font-medium">
-          {experiment.defender}
+        <span className="max-w-full break-all rounded-full border border-blue-freeze px-3 py-1 text-xs text-blue-freeze">
+          <span aria-hidden="true">● </span>{experiment.defender}
         </span>
       </div>
 
@@ -54,9 +57,12 @@ export default function ExperimentRow({
 
       <span className="text-sm">{experiment.date}</span>
 
-      <span className="text-sm">
-        {experiment.currentTurn} / {experiment.totalTurns}
-      </span>
+      <div className="min-w-0">
+        <span className="text-sm">{experiment.currentTurn} / {experiment.totalTurns}</span>
+        <div className="mt-2">
+          <RunProgress completed={experiment.currentTurn} total={experiment.totalTurns} progress={progress} />
+        </div>
+      </div>
       <div className="flex justify-end">
         {onDelete && DELETABLE_STATES.includes(experiment.state) ? (
           <Button
