@@ -1,6 +1,7 @@
 import { rubricLevel } from "@/components/landing/content";
 import { cn } from "@/lib/utils";
 import type { GraphRun } from "./graphData";
+import { turnGradient } from "./turnGradient";
 
 type Props = {
   runs: GraphRun[];
@@ -9,8 +10,8 @@ type Props = {
 };
 
 export default function GraphChart({ runs, selectedId, onSelect }: Props) {
-  const maxTurns = Math.max(10, ...runs.map((run) => Math.max(run.summary.max_turns, run.turns.length)));
-  const ticks = [maxTurns, Math.ceil(maxTurns / 2), 0];
+  const maxTurns = 20;
+  const ticks = [20, 10, 0];
 
   return (
     <div className="overflow-x-auto">
@@ -31,8 +32,12 @@ export default function GraphChart({ runs, selectedId, onSelect }: Props) {
             <div className="relative flex h-full items-end justify-center gap-3 px-3" style={{ minWidth: `${Math.max(280, runs.length * 82)}px` }}>
               {runs.map((run) => {
                 const selected = run.summary.run_id === selectedId;
-                const description = run.turns.length
-                  ? run.turns.map((turn) => `turn ${turn.number}: ${turn.score === null ? "unjudged" : rubricLevel(turn.score).label}`).join(", ")
+                const count = Math.min(maxTurns, Math.max(run.summary.turns_completed, ...run.turns.map((turn) => turn.number), 0));
+                const turns = Array.from({ length: count }, (_, index) =>
+                  run.turns.find((turn) => turn.number === index + 1) ?? { number: index + 1, score: null },
+                );
+                const description = turns.length
+                  ? turns.map((turn) => `turn ${turn.number}: ${turn.score === null ? "unjudged" : rubricLevel(turn.score).label}`).join(", ")
                   : "no completed turns";
                 return (
                   <button
@@ -42,17 +47,18 @@ export default function GraphChart({ runs, selectedId, onSelect }: Props) {
                     aria-pressed={selected}
                     onClick={() => onSelect(run.summary.run_id)}
                     className={cn(
-                      "flex w-16 shrink-0 flex-col-reverse gap-0.5 rounded-lg p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-signal-lime",
+                      "flex w-16 shrink-0 flex-col-reverse overflow-hidden rounded-md outline-none focus-visible:ring-2 focus-visible:ring-signal-lime",
                       selected && "ring-2 ring-signal-lime",
-                      run.turns.length === 0 && "border border-dashed border-smoke",
+                      turns.length === 0 && "border border-dashed border-smoke",
                     )}
-                    style={{ height: run.turns.length ? `${run.turns.length / maxTurns * 100}%` : "24px" }}
+                    style={{ height: turns.length ? `${turns.length / maxTurns * 100}%` : "24px" }}
                   >
-                    {run.turns.map((turn) => (
+                    {turns.map((turn, index) => (
                       <span
                         key={turn.number}
                         title={`Turn ${turn.number}: ${turn.score === null ? "Unjudged" : rubricLevel(turn.score).label}`}
-                        className={cn("min-h-0 w-full flex-1 rounded-md", turn.score === null ? "bg-smoke" : rubricLevel(turn.score).bg)}
+                        className="min-h-0 w-full flex-1"
+                        style={{ background: turnGradient(turn.score, turns[index + 1]?.score, "top") }}
                       />
                     ))}
                   </button>
@@ -68,6 +74,9 @@ export default function GraphChart({ runs, selectedId, onSelect }: Props) {
             ))}
           </div>
           <p className="pt-4 text-center text-sm text-ash">Experiment ID</p>
+          {runs.some((run) => run.summary.turns_completed > maxTurns || run.turns.some((turn) => turn.number > maxTurns)) && (
+            <p className="pt-2 text-center text-sm text-ash">Only the first 20 turns are shown.</p>
+          )}
         </div>
       </div>
     </div>

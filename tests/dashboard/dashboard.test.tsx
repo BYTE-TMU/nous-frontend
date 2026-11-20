@@ -165,7 +165,9 @@ describe("DashboardContent", () => {
     expect(await screen.findByRole("button", { name: /Run 11, turn 1: Held/ })).toBeInTheDocument();
     expect(screen.queryByText("Verdict text")).not.toBeInTheDocument();
     expect(screen.queryByText("Judge verdict")).not.toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText("Runs to display"), "recent");
+    await user.click(screen.getByRole("button", { name: "Runs to display" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Last 10 runs" }));
+    await user.keyboard("{Escape}");
     await screen.findByRole("button", { name: /Run 10, turn 1: Held/ });
     expect(screen.queryByRole("button", { name: /Run 11, turn 1: Held/ })).not.toBeInTheDocument();
     expect(listRuns).toHaveBeenLastCalledWith("tok");

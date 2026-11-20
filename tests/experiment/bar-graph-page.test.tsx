@@ -54,12 +54,14 @@ describe("BarGraphPage", () => {
   it("shows real 0–2 scores and the recorded run cost", async () => {
     render(<BarGraphPage runId="old" />);
     const bar = await screen.findByRole("button", { name: /Run old, turn 1: Held, turn 2: Softened, turn 3: Broke/ });
-    expect(within(bar).getByTitle("Turn 1: Held")).toHaveClass("bg-index-1");
-    expect(within(bar).getByTitle("Turn 2: Softened")).toHaveClass("bg-index-3");
-    expect(within(bar).getByTitle("Turn 3: Broke")).toHaveClass("bg-index-6");
+    expect(within(bar).getByTitle("Turn 1: Held")).toHaveStyle("background: linear-gradient(to top, var(--color-impact-green), var(--color-index-3))");
+    expect(within(bar).getByTitle("Turn 2: Softened")).toHaveStyle("background: linear-gradient(to top, var(--color-index-3), var(--color-index-6))");
+    expect(within(bar).getByTitle("Turn 3: Broke")).toHaveStyle("background: linear-gradient(to top, var(--color-index-6), var(--color-index-6))");
+    expect(bar).toHaveStyle("height: 15%");
+    expect(screen.getByText("20")).toBeInTheDocument();
     expect(screen.getByText("$0.125 · 123 tokens")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Show colour index" }));
-    expect(screen.getByRole("dialog", { name: "Colour Index" })).toHaveTextContent("Grey segments have no completed judgement");
+    expect(screen.getByRole("dialog", { name: "Colour Index" })).toHaveTextContent("Grey indicates turns without a completed judgement");
   });
 
   it("keeps live unjudged turns grey and does not invent an outcome", async () => {
@@ -84,11 +86,51 @@ describe("BarGraphPage", () => {
     getRunJudgements.mockResolvedValue(judgements);
     render(<BarGraphPage runId="old" />);
     const bar = await screen.findByRole("button", { name: /turn 1: Held, turn 2: unjudged/ });
-    expect(within(bar).getByTitle("Turn 2: Unjudged")).toHaveClass("bg-smoke");
-    expect(within(bar).getByTitle("Turn 3: Unjudged")).toHaveClass("bg-smoke");
+    expect(within(bar).getByTitle("Turn 2: Unjudged")).toHaveStyle("background: linear-gradient(to top, var(--color-smoke), var(--color-smoke))");
+    expect(within(bar).getByTitle("Turn 3: Unjudged")).toHaveStyle("background: linear-gradient(to top, var(--color-smoke), var(--color-smoke))");
     expect(within(bar).queryByTitle(/Turn 4/)).not.toBeInTheDocument();
     expect(screen.getByText("in progress")).toBeInTheDocument();
     expect(getRunResults).not.toHaveBeenCalled();
+  });
+
+  it("caps the chart at 20 turns and identifies older runs with more turns", async () => {
+    getRun.mockResolvedValue(run("old", { max_turns: 30, turns_completed: 25 }));
+    getRunResults.mockResolvedValue({
+      ...results,
+      per_turn: Array.from({ length: 25 }, (_, index) => ({ turn: index + 1, classification: 0 })),
+    });
+    render(<BarGraphPage runId="old" />);
+    const bar = await screen.findByRole("button", { name: /Run old, turn 1: Held/ });
+    expect(bar).toHaveStyle("height: 100%");
+    expect(within(bar).getByTitle("Turn 20: Held")).toBeInTheDocument();
+    expect(within(bar).queryByTitle("Turn 21: Held")).not.toBeInTheDocument();
+    expect(screen.getByText("Only the first 20 turns are shown.")).toBeInTheDocument();
+  });
+
+  it("filters by multiple users before applying the last-ten limit", async () => {
+    const runs = Array.from({ length: 22 }, (_, index) => ({
+      ...run(`id-${index + 1}`),
+      owner_email: index % 2 === 0 ? "alice@example.com" : "bob@example.com",
+    }));
+    listRuns.mockResolvedValue(runs);
+    render(<BarGraphPage allUsers />);
+    await screen.findByRole("button", { name: /Run id-22, turn 1/ });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Runs to display" }));
+    expect(screen.getByRole("menuitemcheckbox", { name: "All runs" })).toHaveAttribute("aria-checked", "true");
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Last 10 runs" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "alice@example.com" }));
+    await user.keyboard("{Escape}");
+    expect(await screen.findByRole("button", { name: /Run id-19, turn 1/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Run id-21, turn 1/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Run id-2, turn 1/ })).not.toBeInTheDocument();
+    expect(screen.getByText("Showing the 10 most recent runs from selected users.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Runs to display" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "bob@example.com" }));
+    await user.keyboard("{Escape}");
+    expect(await screen.findByRole("button", { name: /Run id-10, turn 1/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Run id-11, turn 1/ })).not.toBeInTheDocument();
   });
 
   it("shows the ten latest runs, filters them, and selects a different overview", async () => {
@@ -102,7 +144,9 @@ describe("BarGraphPage", () => {
     render(<BarGraphPage runId="old" />);
     await screen.findByRole("button", { name: /Run old, turn 1/ });
     const user = userEvent.setup();
-    await user.selectOptions(screen.getByLabelText("Runs to display"), "recent");
+    await user.click(screen.getByRole("button", { name: "Runs to display" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Last 10 runs" }));
+    await user.keyboard("{Escape}");
     await screen.findByRole("button", { name: /Run id-10, turn 1/ });
     expect(screen.queryByRole("button", { name: /Run id-11, turn 1/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Run old, turn 1/ })).not.toBeInTheDocument();

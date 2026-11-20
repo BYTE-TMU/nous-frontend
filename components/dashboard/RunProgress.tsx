@@ -1,11 +1,11 @@
 import type { GraphTurn } from "@/components/graph/graphData";
+import { turnGradient } from "@/components/graph/turnGradient";
 
 export type ProgressData =
   | { state: "loading" }
   | { state: "error" }
   | { state: "ready"; turns: GraphTurn[] };
 
-const COLORS = ["var(--color-impact-green)", "var(--color-index-3)", "var(--color-index-6)"];
 const LABELS = ["Held", "Softened", "Broke"];
 
 export default function RunProgress({
@@ -45,13 +45,11 @@ export default function RunProgress({
         <div className="flex h-full" style={{ width: `${count / total * 100}%` }}>
           {scores.map((score, index) => {
             const next = scores[index + 1];
-            const color = score === null ? "var(--color-smoke)" : COLORS[score];
-            const nextColor = score === null || next == null ? color : COLORS[next];
             return (
               <span
                 key={index}
                 className="h-full min-w-0 flex-1"
-                style={{ background: `linear-gradient(to right, ${color}, ${nextColor})` }}
+                style={{ background: turnGradient(score, next, "right") }}
               />
             );
           })}

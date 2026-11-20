@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import * as DropdownMenu from "radix-ui/dropdown-menu";
+import { HugeiconsIcon } from "@hugeicons/react";
+import ChevronDownIcon from "@hugeicons/core-free-icons/ChevronDownIcon";
+import Tick02Icon from "@hugeicons/core-free-icons/Tick02Icon";
 import { Button } from "@/components/ui/Button";
 import { ApiError, getRun, listRuns } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
@@ -17,6 +21,7 @@ type Load<T> =
   | { state: "ready"; value: T };
 
 const SELECT = "min-h-10 min-w-0 w-full rounded-full border border-graphite bg-carbon px-4 text-sm text-white";
+const MENU_ITEM = "relative flex cursor-default select-none items-center rounded-md py-2 pl-7 pr-3 text-sm text-muted-foreground outline-none data-[highlighted]:bg-muted data-[highlighted]:text-foreground data-[state=checked]:text-foreground";
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError && error.status === 0) return "Can't reach the server.";
@@ -30,6 +35,8 @@ export default function BarGraphPage({ runId, allUsers = false }: { runId?: stri
   const [current, setCurrent] = useState<Load<GraphRun>>({ state: "loading" });
   const [recent, setRecent] = useState<Load<GraphRun[]>>({ state: "loading" });
   const [mode, setMode] = useState<"current" | "recent" | "all">(runId ? "current" : "all");
+  const [users, setUsers] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState(runId ?? "");
   const [outcome, setOutcome] = useState("all");
   const [attacker, setAttacker] = useState("all");
@@ -73,7 +80,12 @@ export default function BarGraphPage({ runId, allUsers = false }: { runId?: stri
     setRecent({ state: "loading" });
     void (allUsers ? listRuns(token, { all: true }) : listRuns(token))
       .then(async (runs) => {
-        const selectedRuns = mode === "recent" ? runs.slice(0, 10) : runs;
+        if (cancelled) return;
+        setUsers(allUsers ? [...new Set(runs.map((run) => run.owner_email ?? ""))].sort() : []);
+        const matchingRuns = selectedUsers.length
+          ? runs.filter((run) => selectedUsers.includes(run.owner_email ?? ""))
+          : runs;
+        const selectedRuns = mode === "recent" ? matchingRuns.slice(0, 10) : matchingRuns;
         const loaded: GraphRun[] = [];
         for (let i = 0; i < selectedRuns.length; i += 5) {
           if (cancelled) return;
@@ -91,7 +103,7 @@ export default function BarGraphPage({ runId, allUsers = false }: { runId?: stri
         }
       });
     return () => { cancelled = true; };
-  }, [mode, reload, router, allUsers]);
+  }, [mode, reload, router, allUsers, selectedUsers]);
 
   const load: Load<GraphRun[]> = mode === "current"
     ? current.state === "ready" ? { state: "ready", value: [current.value] } : current
@@ -119,25 +131,69 @@ export default function BarGraphPage({ runId, allUsers = false }: { runId?: stri
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label>
-            <span className="sr-only">Runs to display</span>
-            <select
-              value={mode}
-              onChange={(event) => {
-                const value = event.target.value;
-                setMode(value === "recent" ? "recent" : value === "current" && runId ? "current" : "all");
-                setOutcome("all");
-                setAttacker("all");
-                setDefender("all");
-                setSelectedId(runId ?? "");
-              }}
-              className="min-h-10 rounded-full bg-signal-lime px-4 text-sm font-medium text-night"
-            >
-              {runId && <option value="current">Current</option>}
-              <option value="all">All runs</option>
-              <option value="recent">Last 10 runs</option>
-            </select>
-          </label>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <Button variant="outline" className="rounded-full gap-2" aria-label="Runs to display">
+                {mode === "current" ? "Current" : mode === "recent" ? "Last 10 runs" : "All runs"}
+                {selectedUsers.length > 0 && ` · ${selectedUsers.length} ${selectedUsers.length === 1 ? "user" : "users"}`}
+                <HugeiconsIcon icon={ChevronDownIcon} size={14} />
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content align="end" sideOffset={4} className="z-50 max-h-80 min-w-[180px] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-lg">
+                {([
+                  ...(runId ? [{ label: "Current", value: "current" as const }] : []),
+                  { label: "All runs", value: "all" as const },
+                  { label: "Last 10 runs", value: "recent" as const },
+                ]).map((option) => (
+                  <DropdownMenu.CheckboxItem
+                    key={option.value}
+                    checked={mode === option.value}
+                    onSelect={(event) => event.preventDefault()}
+                    onCheckedChange={() => {
+                      setMode(option.value);
+                      if (option.value === "current") setSelectedUsers([]);
+                      setOutcome("all");
+                      setAttacker("all");
+                      setDefender("all");
+                      setSelectedId(runId ?? "");
+                    }}
+                    className={MENU_ITEM}
+                  >
+                    <DropdownMenu.ItemIndicator className="absolute left-2">
+                      <HugeiconsIcon icon={Tick02Icon} size={14} />
+                    </DropdownMenu.ItemIndicator>
+                    {option.label}
+                  </DropdownMenu.CheckboxItem>
+                ))}
+                {allUsers && users.length > 0 && (
+                  <>
+                    <DropdownMenu.Separator className="my-1 h-px bg-border" />
+                    <DropdownMenu.Label className="px-3 py-1 text-xs text-smoke">Users (none selected: all)</DropdownMenu.Label>
+                    {users.map((user) => (
+                      <DropdownMenu.CheckboxItem
+                        key={user}
+                        checked={selectedUsers.includes(user)}
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={(checked) => {
+                          if (mode === "current") setMode("all");
+                          setSelectedUsers((current) => checked
+                            ? [...current, user]
+                            : current.filter((value) => value !== user));
+                        }}
+                        className={MENU_ITEM}
+                      >
+                        <DropdownMenu.ItemIndicator className="absolute left-2">
+                          <HugeiconsIcon icon={Tick02Icon} size={14} />
+                        </DropdownMenu.ItemIndicator>
+                        <span className="break-all">{user || "Unknown user"}</span>
+                      </DropdownMenu.CheckboxItem>
+                    ))}
+                  </>
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
           <details className="relative">
             <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-full border border-graphite bg-carbon px-4 text-sm [&::-webkit-details-marker]:hidden">Filter ▾</summary>
             <div className="absolute right-0 z-20 mt-2 grid w-52 max-w-[calc(100vw-2rem)] grid-cols-[minmax(0,1fr)] gap-3 rounded-xl border border-graphite bg-carbon p-4 shadow-xl sm:w-64">
@@ -174,8 +230,8 @@ export default function BarGraphPage({ runId, allUsers = false }: { runId?: stri
           <Button variant="outline" className="rounded-full" onClick={() => setReload((value) => value + 1)}>Refresh</Button>
         </div>
       </div>
-      {mode === "recent" && <p className="mt-4 text-sm text-smoke">{allUsers ? "Showing the 10 most recent runs from all users." : "Showing your 10 most recent runs."}</p>}
-      {mode === "all" && <p className="mt-4 text-sm text-smoke">{allUsers ? "Showing runs from all users." : "Showing all your runs."}</p>}
+      {mode === "recent" && <p className="mt-4 text-sm text-smoke">{selectedUsers.length ? "Showing the 10 most recent runs from selected users." : allUsers ? "Showing the 10 most recent runs from all users." : "Showing your 10 most recent runs."}</p>}
+      {mode === "all" && <p className="mt-4 text-sm text-smoke">{selectedUsers.length ? "Showing runs from selected users." : allUsers ? "Showing runs from all users." : "Showing all your runs."}</p>}
       <section aria-label="Run graph" className="mt-6 rounded-2xl border border-graphite bg-night/90 p-4 sm:p-6">
         {load.state === "loading" && <p role="status" className="py-20 text-center text-smoke">Loading graph…</p>}
         {load.state === "error" && (
